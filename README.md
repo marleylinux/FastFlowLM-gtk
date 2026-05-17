@@ -2,21 +2,20 @@
 
 A minimalist desktop interface for [FastFlowLM](https://github.com/FastFlowLM/FastFlowLM).
 
-This application provides a simple environment for interacting with local LLMs, designed for Arch Linux users who want a distraction-free experience that integrates with the system dark mode.
+FastFlowLM-gtk is a lightweight, distraction-free application built with GTK 4 and Libadwaita. It serves as a dedicated interface for interacting with local LLMs, focusing on a clean, simple layout.
 
-## Features
-- **Distraction-free interface:** Uses standard GNOME dark mode with black AI chat bubbles for clear reading.
-- **Backend management:** Detects flm serve status and handles lifecycle management.
-- **Session-based model loading:** Automates model loading and unloading per session to optimize resource usage.
-- **History persistence:** Automatically saves chat sessions to the configuration directory, using the first prompt as the chat title.
-- **Syntax highlighting:** Provides high-quality syntax highlighting for code blocks using GtkSourceView 5.
-- **Minimal controls:** Includes basic session and model management without extra overhead.
+## What this application does
+- **Backend Lifecycle Management:** Automatically detects, starts, and stops the `flm serve` process. It dynamically loads/unloads models to manage VRAM/RAM usage effectively, resolving common connection issues.
+- **Model Interaction:** Provides a direct interface to chat with locally-hosted models using an OpenAI-compatible API.
+- **Session Management:** Automatically saves your chat history to `~/.config/flm/history/`, allowing you to resume past conversations.
+- **Smart Formatting:** Uses GtkSourceView 5 for high-quality syntax highlighting of code blocks and provides support for bold text and inline code formatting.
+- **Resource Management:** Includes a forceful "Eject" command to terminate background processes and free system resources immediately.
 
 ## Quick Installation
 
-This application is built for Arch Linux. The provided installer script manages system dependencies and file placement.
+This application is packaged for Arch Linux. The provided installer script automatically handles the installation of all system dependencies.
 
-1. **Clone the repo:**
+1. **Clone the repository:**
    ```bash
    git clone https://github.com/marleylinux/FastFlowLM-GTK
    cd FastFlowLM-GTK
@@ -28,4 +27,12 @@ This application is built for Arch Linux. The provided installer script manages 
    sudo ./install.sh
    ```
 
-The script installs fastflowlm and all required GTK/GNOME dependencies, then sets up the application. You can find "FastFlowLM-gtk" in your application menu.
+### System Dependencies Installed
+The installer script runs `pacman` to ensure your system has the following components:
+- `fastflowlm`: The backend engine required to run the local LLM server.
+- `python`, `python-gobject`: Required to run the application logic and GTK bindings.
+- `gtk4`, `libadwaita`: The modern UI toolkit for the application window and controls.
+- `libsoup3`: Handles asynchronous HTTP communication with the local LLM server.
+- `gtksourceview5`: Provides professional-grade syntax highlighting for code blocks.
+
+Once installed, you can launch **FastFlowLM-gtk** from your application launcher.

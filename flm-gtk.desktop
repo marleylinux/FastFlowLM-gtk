@@ -1,0 +1,9 @@
+[Desktop Entry]
+Name=FastFlowLM-gtk
+Comment=Minimalist GTK interface for FastFlowLM
+Exec=/home/marley/gemini/flm-gtk
+Path=/home/marley/gemini/
+Icon=/home/marley/gemini/flm-gtk.png
+Terminal=false
+Type=Application
+Categories=Utility;Development;

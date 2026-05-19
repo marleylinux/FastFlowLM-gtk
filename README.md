@@ -31,7 +31,7 @@ If you prefer to build from source:
 1. **Clone the repository:**
    ```bash
    git clone https://github.com/marleylinux/FastFlowLM-GTK
-   cd FastFlowLM-GTK
+   cd FastFlowLM-gtk
    ```
 
 2. **Run the installer:**

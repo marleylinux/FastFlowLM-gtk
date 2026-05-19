@@ -1,8 +1,19 @@
 # FastFlowLM-gtk
 
-A minimalist desktop interface for [FastFlowLM](https://github.com/FastFlowLM/FastFlowLM).
+A minimalist, modern desktop interface for [FastFlowLM](https://github.com/FastFlowLM/FastFlowLM), built with GTK 4 and Libadwaita.
 
-FastFlowLM-gtk is a lightweight, distraction-free application built with GTK 4 and Libadwaita. It serves as a dedicated interface for interacting with local LLMs, focusing on a clean, modern layout.
+FastFlowLM-gtk provides a distraction-free, native Linux experience for interacting with local LLMs, focusing on a clean, responsive layout and seamless session management.
+
+## Key Features
+
+- **Intuitive UI:** Built using modern GNOME/Adwaita design principles.
+- **Vision Support:** Full support for image attachments in vision-capable models, with interactive thumbnail previews.
+- **Session Persistence:** All chats are automatically saved to `~/.config/flm/history`, with smart management and easy deletion.
+- **Global Theming:** Customize your accent color, which persists across app restarts.
+- **Real-time Status:** Includes a "Thinking..." indicator and system-resource-aware process management.
+- **Searchable History:** Built-in search functionality with live message preview.
+- **Model Management:** Select models dynamically and download them directly from the interface.
+- **Markdown Support:** Professional-grade syntax highlighting and Markdown formatting in chat.
 
 ## Installation
 
@@ -29,21 +40,8 @@ If you prefer to build from source:
    sudo ./install.sh
    ```
 
-The script installs `fastflowlm` and all required GTK dependencies, then sets up the application.
+## Dependencies
 
-## Features
-- **Distraction-free interface:** Uses modern GNOME-style design with customizable chat bubble themes.
-- **Vision & File Support:** Supports image attachments (for vision-capable models) with intuitive thumbnail previews and removable attachments.
-- **Thinking Indicator:** Real-time "Thinking..." status when the AI is processing requests.
-- **Customizable Theming:** Change the app's global accent color to match your preference, persisting automatically across restarts.
-- **Robust Session Management:** Smart chat-switching with confirmation dialogs and resource-cleanup delays to prevent connection issues.
-- **History persistence:** Automatically saves chat sessions, managing local state cleanly.
-- **Minimal controls:** Includes essential management without extra overhead.
-
-## System Dependencies
-The installation process ensures the following are present on your system:
-- `fastflowlm`: The backend engine.
-- `python`, `python-gobject`: Required for application logic and GTK bindings.
-- `gtk4`, `libadwaita`: Modern UI toolkit components.
-- `libsoup3`: Handles asynchronous HTTP communication.
-- `gtksourceview5`: Provides professional-grade syntax highlighting.
+- **Backend:** [FastFlowLM](https://github.com/FastFlowLM/FastFlowLM)
+- **UI Toolkit:** `gtk4`, `libadwaita`
+- **Logic:** `python`, `python-gobject`, `libsoup3`, `gtksourceview5`

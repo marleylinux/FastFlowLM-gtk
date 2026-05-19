@@ -87,7 +87,7 @@ CSS = """
 }
 
 .sidebar-list {
-    background-color: @window_bg_color;
+    background-color: alpha(@window_bg_color, 0.2);
 }
 
 .delete-btn {
@@ -104,12 +104,16 @@ class FlmChatApp(Adw.Application):
     def __init__(self):
         super().__init__(application_id=APP_ID, flags=Gio.ApplicationFlags.FLAGS_NONE)
         self.server_process: Optional[subprocess.Popen] = None
+        self.css_provider = Gtk.CssProvider()
+        self.ai_task = None
+        
+        # Load theme color
+        self.theme_color = self.load_theme_color()
         
         # Pre-fetch models to avoid delay
         self.models = self.get_all_models()
-        
-        self.current_model: Optional[str] = None
-        self.ai_task = None
+        self.current_model = None
+
         self.downloading_models = set()
         self.tasks = set()
         self.session = Soup.Session()
@@ -138,11 +142,6 @@ class FlmChatApp(Adw.Application):
             print("Warning: Another instance is managing the system models.")
 
     def do_activate(self):
-        # (silence legacy dark mode warnings)
-        settings = Gtk.Settings.get_default()
-        if settings:
-            settings.set_property("gtk-application-prefer-dark-theme", False)
-
         # Force dark mode (GNOME aesthetic)
         Adw.StyleManager.get_default().set_color_scheme(Adw.ColorScheme.PREFER_DARK)
         
@@ -155,16 +154,20 @@ class FlmChatApp(Adw.Application):
         action_clear.connect("activate", self.on_clear_history)
         self.add_action(action_clear)
 
+        action_color = Gio.SimpleAction.new("choose_color", None)
+        action_color.connect("activate", self.on_choose_color)
+        self.add_action(action_color)
+
         self.win = Adw.ApplicationWindow(application=self)
         self.win.set_default_size(900, 800)
         self.win.set_title("FastFlowLM-gtk")
         
         # CSS and UI Layout
-        provider = Gtk.CssProvider()
-        provider.load_from_data(CSS.encode())
+        self.css_provider.load_from_data(CSS.encode())
+        self.apply_theme(self.theme_color)
         Gtk.StyleContext.add_provider_for_display(
             Gdk.Display.get_default(),
-            provider,
+            self.css_provider,
             Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION
         )
 
@@ -218,6 +221,7 @@ class FlmChatApp(Adw.Application):
         self.header.pack_start(self.options_btn)
         
         self.options_menu = Gio.Menu()
+        self.options_menu.append("Choose Theme Color", "app.choose_color")
         self.options_menu.append("Allow Switching Model mid-chat", "app.allow_switch")
         self.options_menu.append("Clear All History", "app.clear_history")
         self.options_btn.set_menu_model(self.options_menu)
@@ -1001,6 +1005,46 @@ class FlmChatApp(Adw.Application):
             if thinking_label.get_parent() == self.chat_box:
                 self.chat_box.remove(thinking_label)
             self.add_system_message(f"Connection mapping error: {str(e)}")
+
+    def on_choose_color(self, action, value):
+        dialog = Gtk.ColorDialog.new()
+        # Correct signature: parent, initial_color, cancellable, callback, data
+        dialog.choose_rgba(self.win, None, None, self.on_color_picked, None)
+
+
+    def load_theme_color(self):
+        config_path = os.path.expanduser("~/.config/flm/theme.json")
+        if os.path.exists(config_path):
+            try:
+                with open(config_path, "r") as f:
+                    return json.load(f).get("accent_color", "#3584e4")
+            except: pass
+        return "#3584e4"
+
+    def apply_theme(self, hex_color):
+        full_css = f"""
+        @define-color accent_bg_color {hex_color};
+        .user-bubble {{ background-color: {hex_color}; }}
+        .sidebar-title {{ color: #ffffff; }}
+        .sidebar-subtitle {{ color: #ffffff; }}
+        row:selected {{ background-color: {hex_color}; }}
+        button.suggested-action {{ background-color: {hex_color}; }}
+        {CSS}
+        """
+        self.css_provider.load_from_data(full_css.encode())
+
+    def on_color_picked(self, dialog, result, data):
+        try:
+            color = dialog.choose_rgba_finish(result)
+            hex_color = "#{:02x}{:02x}{:02x}".format(int(color.red * 255), int(color.green * 255), int(color.blue * 255))
+            self.apply_theme(hex_color)
+            
+            # Save theme
+            config_path = os.path.expanduser("~/.config/flm/theme.json")
+            with open(config_path, "w") as f:
+                json.dump({"accent_color": hex_color}, f)
+        except Exception as e:
+            print(f"Error applying color: {e}")
 
     def do_shutdown(self):
         self.save_session()

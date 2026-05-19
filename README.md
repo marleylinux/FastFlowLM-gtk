@@ -30,7 +30,7 @@ If you prefer to build from source:
 
 1. **Clone the repository:**
    ```bash
-   git clone https://github.com/marleylinux/FastFlowLM-GTK
+   git clone https://github.com/marleylinux/FastFlowLM-gtk
    cd FastFlowLM-gtk
    ```
 

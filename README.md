@@ -29,7 +29,7 @@ If you prefer to build from source:
    sudo ./install.sh
    ```
 
-The script installs `fastflowlm` and all required GTK/GNOME dependencies, then sets up the application.
+The script installs `fastflowlm` and all required GTK dependencies, then sets up the application.
 
 ## Features
 - **Distraction-free interface:** Uses modern GNOME-style design with customizable chat bubble themes.

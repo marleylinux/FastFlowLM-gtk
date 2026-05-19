@@ -24,13 +24,13 @@ A modern, robust, and native GTK 4/Libadwaita graphical interface for the FastFl
 
 ## Installation & Running
 
-1.  **Clone the Repository:**
-    ```bash
-    git clone https://github.com/FastFlowLM/FastFlowLM-gtk
-    cd FastFlowLM-gtk
-    ```
+1. **Clone the repository:**
+   ```bash
+   git clone https://github.com/marleylinux/FastFlowLM-gtk
+   cd FastFlowLM-gtk
+   ```
 
-2.  **Dependencies:** Ensure you have the necessary GNOME/Adwaita libraries installed.
+2. **Dependencies:** Ensure you have the necessary GNOME/Adwaita libraries installed.
 
 3.  **Run the Application:**
     Simply execute:

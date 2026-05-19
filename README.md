@@ -2,7 +2,7 @@
 
 A minimalist desktop interface for [FastFlowLM](https://github.com/FastFlowLM/FastFlowLM).
 
-FastFlowLM-gtk is a lightweight, distraction-free application built with GTK 4 and Libadwaita. It serves as a dedicated interface for interacting with local LLMs, focusing on a clean, simple layout.
+FastFlowLM-gtk is a lightweight, distraction-free application built with GTK 4 and Libadwaita. It serves as a dedicated interface for interacting with local LLMs, focusing on a clean, modern layout.
 
 ## Installation
 
@@ -32,12 +32,13 @@ If you prefer to build from source:
 The script installs `fastflowlm` and all required GTK/GNOME dependencies, then sets up the application.
 
 ## Features
-- **Distraction-free interface:** Uses standard GNOME dark mode with black AI chat bubbles for clear reading.
-- **Backend management:** Detects flm serve status and handles lifecycle management.
-- **Session-based model loading:** Automates model loading and unloading per session to optimize resource usage.
-- **History persistence:** Automatically saves chat sessions to the configuration directory, using the first prompt as the chat title.
-- **Syntax highlighting:** Provides high-quality syntax highlighting for code blocks using GtkSourceView 5.
-- **Minimal controls:** Includes basic session and model management without extra overhead.
+- **Distraction-free interface:** Uses modern GNOME-style design with customizable chat bubble themes.
+- **Vision & File Support:** Supports image attachments (for vision-capable models) with intuitive thumbnail previews and removable attachments.
+- **Thinking Indicator:** Real-time "Thinking..." status when the AI is processing requests.
+- **Customizable Theming:** Change the app's global accent color to match your preference, persisting automatically across restarts.
+- **Robust Session Management:** Smart chat-switching with confirmation dialogs and resource-cleanup delays to prevent connection issues.
+- **History persistence:** Automatically saves chat sessions, managing local state cleanly.
+- **Minimal controls:** Includes essential management without extra overhead.
 
 ## System Dependencies
 The installation process ensures the following are present on your system:

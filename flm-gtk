@@ -296,7 +296,10 @@ class FlmChatApp(Adw.Application):
     def on_attach_clicked(self, btn):
         dialog = Gtk.FileChooserNative.new("Select Image", self.win, Gtk.FileChooserAction.OPEN, "Open", "Cancel")
         filter = Gtk.FileFilter()
-        filter.add_mime_type("image/*")
+        filter.set_name("Images")
+        filter.add_mime_type("image/png")
+        filter.add_mime_type("image/jpeg")
+        filter.add_mime_type("image/webp")
         dialog.add_filter(filter)
         dialog.connect("response", self.on_file_selected)
         dialog.show()
@@ -304,8 +307,10 @@ class FlmChatApp(Adw.Application):
     def on_file_selected(self, dialog, response):
         if response == Gtk.ResponseType.ACCEPT:
             file = dialog.get_file()
-            self.selected_image_path = file.get_path()
-            self.update_thumbnail()
+            path = file.get_path()
+            if path:
+                self.selected_image_path = path
+                self.update_thumbnail()
         dialog.destroy()
 
     def update_thumbnail(self):
@@ -406,10 +411,13 @@ class FlmChatApp(Adw.Application):
                                              stdout=subprocess.DEVNULL, 
                                              stderr=subprocess.DEVNULL)
 
+    def is_current_model_capable(self) -> bool:
+        return self.is_current_model_vlm()
+
     def is_current_model_vlm(self) -> bool:
         if not self.current_model: return False
-        model_data = next((m for m in self.models if m['model'] == self.current_model), None)
-        return model_data is not None and model_data.get('vlm', False)
+        model_data = next((m for m in self.models if m["model"] == self.current_model), None)
+        return model_data is not None and model_data.get("vlm", False)
 
     def update_model_ui(self):
         # Refresh models just in case
@@ -418,7 +426,9 @@ class FlmChatApp(Adw.Application):
         
         if self.current_model:
             label_text = self.current_model
-            if self.is_current_model_vlm():
+            # Keep VLM check for the eye icon specifically
+            model_data = next((m for m in self.models if m['model'] == self.current_model), None)
+            if model_data and model_data.get('vlm', False):
                 label_text = "👁 " + label_text
             self.model_btn.set_label(label_text)
         else:
@@ -428,7 +438,7 @@ class FlmChatApp(Adw.Application):
         ram_ok = self.has_sufficient_ram()
         
         # Attach Button Sensitivity
-        self.btn_attach.set_sensitive(self.is_current_model_vlm())
+        self.btn_attach.set_sensitive(self.is_current_model_capable())
         
         # If history exists, we should generally lock the model.
         # If the model was ejected, we shouldn't allow changing it to a new model unless the chat is cleared.

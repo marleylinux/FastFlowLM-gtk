@@ -56,5 +56,5 @@ yay -S fastflowlm-gtk
    ```
 
 ---
-*Powered by [FastFlowLM](https://github.com/FastFlowLM/FastFlowLM).*
+*Powered by [FastFlowLM](https://github.com/FastFlowLM/FastFlowLM).* << (made by people way smarter than me)
 *Contact: warburtonmarley@proton.me*

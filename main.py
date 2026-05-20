@@ -565,10 +565,10 @@ class FlmChatApp(Adw.Application):
         link_ui.set_halign(Gtk.Align.CENTER)
         credits_box.append(link_ui)
 
-        label_engine = Gtk.Label(label="Powered by FastFlowLM")
-        label_engine.add_css_class("dim-label")
-        label_engine.set_halign(Gtk.Align.CENTER)
-        credits_box.append(label_engine)
+        link_engine = Gtk.LinkButton(uri="https://github.com/FastFlowLM/FastFlowLM", label="Powered by FastFlowLM")
+        link_engine.add_css_class("dim-label")
+        link_engine.set_halign(Gtk.Align.CENTER)
+        credits_box.append(link_engine)
         
         welcome_box.append(credits_box)
         

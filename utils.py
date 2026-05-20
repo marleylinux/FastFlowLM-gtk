@@ -6,74 +6,110 @@ CSS = """
 .user-bubble {
     background-color: @accent_bg_color;
     color: @accent_fg_color;
-    border-radius: 12px;
-    padding: 10px 14px;
-    margin: 5px 20px 5px 60px;
+    border-radius: 18px 18px 4px 18px;
+    padding: 12px 16px;
+    margin: 6px 20px 6px 80px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
 }
 
 .assistant-bubble {
-    background-color: #000000;
+    background-color: @view_bg_color;
     color: @window_fg_color;
+    border-radius: 18px 18px 18px 4px;
+    padding: 12px 16px;
+    margin: 6px 80px 6px 20px;
+    border: 1px solid alpha(@window_fg_color, 0.05);
+}
+
+.accent-btn {
+    background-color: @accent_bg_color;
+    color: @accent_fg_color;
+}
+
+.rounded-image {
     border-radius: 12px;
-    padding: 10px 14px;
-    margin: 5px 60px 5px 20px;
 }
 
 progressbar.suggested-action > trough > progress {
     background-color: @accent_bg_color;
+    border-radius: 10px;
 }
 
 .chat-scroll {
-    border-bottom: 1px solid @borders;
-}
-
-.input-area {
-    padding: 12px;
     background-color: @window_bg_color;
 }
 
+.input-area {
+    padding: 16px 24px;
+    background-color: transparent;
+}
+
 .input-view {
-    border-radius: 8px;
-    padding: 8px;
+    border-radius: 24px;
+    padding: 8px 16px;
     background-color: @view_bg_color;
+    border: 1px solid alpha(@window_fg_color, 0.1);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.08);
 }
 
 .uninstalled-model-label {
-    color: #808080;
+    opacity: 0.5;
 }
 
 .installed-model-label {
-    color: #ffffff;
-    font-weight: bold;
-}
-
-.code-block {
-    font-family: monospace;
-    background-color: #1e1e1e;
-    color: #dcdcdc;
-    padding: 4px;
+    font-weight: 500;
 }
 
 .sidebar-title {
-    font-weight: bold;
-    font-size: 0.9em;
+    font-weight: 600;
+    font-size: 0.95em;
 }
 
 .sidebar-subtitle {
-    color: grey;
-    font-size: 0.8em;
+    opacity: 0.7;
+    font-size: 0.85em;
 }
 
 .sidebar-list {
-    background-color: alpha(@window_bg_color, 0.2);
+    background-color: @window_bg_color;
+    border-right: 1px solid @borders;
+}
+
+.sidebar-list list {
+    background-color: transparent;
+}
+
+.sidebar-list row {
+    border-radius: 12px;
+    margin: 2px 8px;
+    transition: all 200ms ease;
+}
+
+.sidebar-list row:hover {
+    background-color: alpha(@window_fg_color, 0.05);
+}
+
+.sidebar-list row:selected {
+    background-color: alpha(@accent_bg_color, 0.2);
+    color: @accent_bg_color;
+}
+
+.sidebar-list row:selected .sidebar-title,
+.sidebar-list row:selected .sidebar-subtitle {
+    color: @accent_bg_color;
 }
 
 .delete-btn {
-    opacity: 0.3;
+    opacity: 0;
+    transition: opacity 200ms ease;
+}
+
+row:hover .delete-btn {
+    opacity: 0.6;
 }
 
 .delete-btn:hover {
-    opacity: 1.0;
+    opacity: 1.0 !important;
     color: @error_color;
 }
 """

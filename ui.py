@@ -11,17 +11,25 @@ def build_sidebar(app) -> Gtk.Box:
     """Builds the sidebar UI, including history and search."""
     sidebar_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
     sidebar_box.add_css_class("sidebar-list")
+    
     sidebar_header = Adw.HeaderBar()
     sidebar_header.set_show_end_title_buttons(False)
     sidebar_box.append(sidebar_header)
     
+    search_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
+    search_box.set_margin_start(12)
+    search_box.set_margin_end(12)
+    search_box.set_margin_bottom(12)
+    
     app.search_entry = Gtk.SearchEntry()
     app.search_entry.set_placeholder_text("Search chats...")
     app.search_entry.connect("search-changed", app.on_search_changed)
-    sidebar_box.append(app.search_entry)
+    search_box.append(app.search_entry)
+    sidebar_box.append(search_box)
 
     app.history_list = Gtk.ListBox()
     app.history_list.set_selection_mode(Gtk.SelectionMode.SINGLE)
+    app.history_list.add_css_class("navigation-sidebar")
     app.history_list.connect("row-activated", app.on_history_row_activated)
     
     sidebar_scrolled = Gtk.ScrolledWindow()
@@ -54,44 +62,57 @@ def build_main_content(app) -> Gtk.Box:
     app.scrolled = Gtk.ScrolledWindow()
     app.scrolled.set_vexpand(True)
     app.scrolled.add_css_class("chat-scroll")
-    app.chat_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=10)
-    app.chat_box.set_margin_top(10)
-    app.chat_box.set_margin_bottom(10)
+    app.chat_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=12)
+    app.chat_box.set_margin_top(18)
+    app.chat_box.set_margin_bottom(18)
     
     app.scrolled.set_child(app.chat_box)
     main_box.append(app.scrolled)
 
     app.thumb_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=10)
+    app.thumb_box.set_margin_start(32)
+    app.thumb_box.set_margin_end(32)
     main_box.append(app.thumb_box)
 
     app.input_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=10)
     app.input_box.add_css_class("input-area")
     
+    input_container = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=8)
+    input_container.add_css_class("input-view")
+    input_container.set_hexpand(True)
+    
     app.input_scroll = Gtk.ScrolledWindow()
     app.input_scroll.set_hexpand(True)
     app.input_scroll.set_policy(Gtk.PolicyType.NEVER, Gtk.PolicyType.AUTOMATIC)
-    app.input_scroll.set_min_content_height(40)
+    app.input_scroll.set_min_content_height(36)
     app.input_scroll.set_max_content_height(150)
-    app.input_scroll.add_css_class("input-view")
     
     app.entry = Gtk.TextView()
     app.entry.set_wrap_mode(Gtk.WrapMode.WORD_CHAR)
     app.entry.set_accepts_tab(False)
+    app.entry.set_valign(Gtk.Align.CENTER)
     
     key_ctrl = Gtk.EventControllerKey()
     key_ctrl.connect("key-pressed", app.on_key_pressed)
     app.entry.add_controller(key_ctrl)
     
     app.input_scroll.set_child(app.entry)
-    app.input_box.append(app.input_scroll)
-    
-    app.btn_send = Gtk.Button(icon_name="mail-send-symbolic")
-    app.btn_send.connect("clicked", app.on_send)
-    app.input_box.append(app.btn_send)
+    input_container.append(app.input_scroll)
     
     app.btn_attach = Gtk.Button(icon_name="paperclip-symbolic")
+    app.btn_attach.add_css_class("flat")
+    app.btn_attach.set_valign(Gtk.Align.CENTER)
     app.btn_attach.connect("clicked", app.on_attach_clicked)
-    app.input_box.append(app.btn_attach)
+    input_container.append(app.btn_attach)
+
+    app.input_box.append(input_container)
+    
+    app.btn_send = Gtk.Button(icon_name="mail-send-symbolic")
+    app.btn_send.add_css_class("circular")
+    app.btn_send.add_css_class("suggested-action")
+    app.btn_send.set_valign(Gtk.Align.CENTER)
+    app.btn_send.connect("clicked", app.on_send)
+    app.input_box.append(app.btn_send)
     
     main_box.append(app.input_box)
     return main_box

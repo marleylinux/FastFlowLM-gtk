@@ -19,11 +19,6 @@ def apply_theme(app, hex_color: str) -> None:
     """Applies the custom accent color CSS to the application."""
     full_css = f"""
     @define-color accent_bg_color {hex_color};
-    .user-bubble {{ background-color: {hex_color}; }}
-    .sidebar-title {{ color: #ffffff; }}
-    .sidebar-subtitle {{ color: #ffffff; }}
-    row:selected {{ background-color: {hex_color}; }}
-    button.suggested-action {{ background-color: {hex_color}; }}
     {app.utils.CSS}
     """
     app.css_provider.load_from_data(full_css.encode())

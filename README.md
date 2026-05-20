@@ -2,7 +2,7 @@
 
 A simple, fast, and native GTK 4 interface for the [FastFlowLM](https://github.com/FastFlowLM/FastFlowLM) engine.
 
-I built this because I wanted a clean, distraction-free way to chat with local LLMs on my Arch Linux setup, without all the overhead of electron apps or web browsers. It's designed to be light, stay out of your way, and run great on GNOME/Libadwaita.
+I built this because I wanted a clean, distraction-free way to chat with local LLMs on my Arch Linux setup, without all the overhead of electron apps or web browsers. It's designed to be light, stay out of your way, and run great on GTK/Libadwaita.
 
 ## What it does
 

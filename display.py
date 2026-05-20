@@ -11,23 +11,15 @@ from typing import Optional
 
 def add_message(app, text: str, is_user: bool, image_path: Optional[str] = None) -> Gtk.Label:
     """
-    Renders a chat bubble to the main display area.
-
-    Args:
-        app: The FlmChatApp instance.
-        text: The message content to display.
-        is_user: Whether the message is from the user or the assistant.
-        image_path: Optional path to an image attachment.
-
-    Returns:
-        The Gtk.Label containing the rendered text.
+    Renders a chat bubble to the main display area with modern styling.
     """
-    bubble_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=5)
+    bubble_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=8)
     bubble_box.add_css_class("user-bubble" if is_user else "assistant-bubble")
     
     if image_path:
         img = Gtk.Image.new_from_file(image_path)
-        img.set_pixel_size(200)
+        img.set_pixel_size(240)
+        img.add_css_class("rounded-image") # Assuming rounding via global style or similar
         bubble_box.append(img)
         
     bubble = Gtk.Label()
@@ -46,6 +38,7 @@ def add_message(app, text: str, is_user: bool, image_path: Optional[str] = None)
     if not is_user:
         copy_btn = Gtk.Button(icon_name="edit-copy-symbolic")
         copy_btn.add_css_class("flat")
+        copy_btn.add_css_class("dim-label")
         copy_btn.set_halign(Gtk.Align.END)
         copy_btn.connect("clicked", lambda b: copy_to_clipboard(text))
         bubble_box.append(copy_btn)

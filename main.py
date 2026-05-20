@@ -313,7 +313,7 @@ class FlmChatApp(Adw.Application):
             title = Gtk.Label(label=meta["title"])
             title.set_halign(Gtk.Align.START)
             title.set_ellipsize(3)
-            title.set_max_width_chars(20)
+            title.set_max_width_chars(24)
             title.add_css_class("sidebar-title")
             
             model_label = meta["model"]
@@ -323,7 +323,9 @@ class FlmChatApp(Adw.Application):
             
             model = Gtk.Label(label=model_label)
             model.set_halign(Gtk.Align.START)
+            model.set_ellipsize(3)
             model.add_css_class("sidebar-subtitle")
+            model.add_css_class("dim-label")
             
             txt_box.append(title)
             txt_box.append(model)
@@ -516,42 +518,51 @@ class FlmChatApp(Adw.Application):
         self.entry.set_sensitive(False)
         self.btn_send.set_sensitive(False)
 
-        welcome_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=20)
+        welcome_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=24)
         welcome_box.set_valign(Gtk.Align.CENTER)
         welcome_box.set_halign(Gtk.Align.CENTER)
+        welcome_box.set_margin_top(40)
+        welcome_box.set_margin_bottom(40)
         
-        icon = Gtk.Image(icon_name="document-new-symbolic")
-        icon.set_pixel_size(64)
-        icon.set_halign(Gtk.Align.CENTER)
+        icon = Gtk.Image(icon_name="com.marley.FastFlowLM-gtk-symbolic")
+        # Fallback to document-new if custom icon not found in system
+        if not icon.get_paintable():
+            icon.set_from_icon_name("document-new-symbolic")
+        icon.set_pixel_size(96)
+        icon.add_css_class("dim-label")
         welcome_box.append(icon)
         
+        title = Gtk.Label(label="FastFlowLM")
+        title.add_css_class("title-1")
+        welcome_box.append(title)
+
         info_text = (
-            "Welcome to FastFlowLM-gtk!\n\n"
-            "This app is a graphical interface for the FastFlowLM engine.\n\n"
-            "• Modern, distraction-free desktop UI\n"
+            "A modern, native interface for local LLMs.\n\n"
+            "• Optimized for GTK 4 & Libadwaita\n"
             "• Advanced session & history management\n"
-            "• Search history with live message previews\n"
-            "• Markdown bolding & visual formatting support\n"
-            "• Image attachment support (for vision models)\n"
-            "• Customizable theme colors\n\n"
-            "Please click 'New Chat' to begin."
+            "• Real-time NPU-accelerated performance\n"
+            "• Local-first privacy and control"
         )
         
         label = Gtk.Label(label=info_text)
-        label.set_justify(Gtk.Justification.LEFT)
-        label.set_halign(Gtk.Align.CENTER)
+        label.set_justify(Gtk.Justification.CENTER)
+        label.add_css_class("dim-label")
         welcome_box.append(label)
         
-        link = Gtk.LinkButton(uri="https://github.com/FastFlowLM/FastFlowLM", label="Visit FastFlowLM on GitHub")
+        btn_start = Gtk.Button(label="Start New Chat")
+        btn_start.add_css_class("pill")
+        btn_start.add_css_class("accent-btn")
+        btn_start.set_halign(Gtk.Align.CENTER)
+        btn_start.set_size_request(200, -1)
+        btn_start.connect("clicked", lambda b: self.on_new_chat(None))
+        welcome_box.append(btn_start)
+
+        link = Gtk.LinkButton(uri="https://github.com/FastFlowLM/FastFlowLM", label="Project Homepage")
         link.set_halign(Gtk.Align.CENTER)
         welcome_box.append(link)
         
         # Center the box inside the chat area
-        outer_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
-        outer_box.set_valign(Gtk.Align.CENTER)
-        outer_box.append(welcome_box)
-        
-        self.chat_box.append(outer_box)
+        self.chat_box.append(welcome_box)
 
     def chat_box_remove_all(self):
         return display.chat_box_remove_all(self)

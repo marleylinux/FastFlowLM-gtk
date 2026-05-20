@@ -199,30 +199,34 @@ def update_model_ui(app) -> None:
         is_downloading = model_name in app.downloading_models
         
         row = Gtk.ListBoxRow()
-        box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=10)
-        box.set_margin_start(10)
-        box.set_margin_end(10)
-        box.set_margin_top(5)
-        box.set_margin_bottom(5)
+        box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=12)
+        box.set_margin_start(12)
+        box.set_margin_end(12)
+        box.set_margin_top(8)
+        box.set_margin_bottom(8)
 
         label_text = f"⬇ Downloading {model_name}..." if is_downloading else model_name
         if m.get('vlm', False):
             label_text = "👁 " + label_text
         label = Gtk.Label(label=label_text)
         label.set_xalign(0)
+        label.set_hexpand(True)
             
         if is_downloading:
             row.set_sensitive(False)
+            label.add_css_class("dim-label")
         elif not is_installed:
             label.add_css_class("uninstalled-model-label")
+            label.add_css_class("dim-label")
         else:
             label.add_css_class("installed-model-label")
             # Container for actions
-            actions = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=2)
+            actions = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=4)
             
             # Info Button
             info_btn = Gtk.Button(icon_name="dialog-information-symbolic")
             info_btn.add_css_class("flat")
+            info_btn.add_css_class("dim-label")
             info_btn.set_tooltip_text("Model Details")
             info_btn.connect("clicked", lambda b: show_model_info(app, m))
             actions.append(info_btn)

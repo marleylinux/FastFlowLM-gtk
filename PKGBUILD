@@ -7,6 +7,13 @@ url="https://github.com/marleylinux/FastFlowLM-GTK"
 license=('MIT')
 depends=('python' 'python-gobject' 'gtk4' 'libadwaita' 'libsoup3' 'gtksourceview5' 'python-psutil' 'fastflowlm' 'python-build' 'python-installer')
 makedepends=('python-build' 'python-installer' 'python-setuptools' 'python-wheel')
+source=("fastflowlm-gtk.desktop"
+        "flm-gtk.png"
+        "app.py"
+        "pyproject.toml"
+        "src/"
+        "README.md")
+sha256sums=('SKIP' 'SKIP' 'SKIP' 'SKIP' 'SKIP' 'SKIP')
 
 build() {
   cd "$srcdir"

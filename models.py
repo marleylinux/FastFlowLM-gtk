@@ -9,6 +9,7 @@ from gi.repository import Gtk, Adw, GLib
 import asyncio
 import subprocess
 import flm
+import re
 from typing import Optional
 
 async def init_server(app) -> None:
@@ -49,7 +50,7 @@ def on_download_response(app, dialog: Adw.MessageDialog, response: str, model_na
     dialog.destroy()
 
 async def download_model(app, model_name: str) -> None:
-    """Executes model download with progress tracking."""
+    """Executes model download with real-time progress parsing."""
     app.downloading_models.add(model_name)
     
     progress = Gtk.ProgressBar()
@@ -68,10 +69,27 @@ async def download_model(app, model_name: str) -> None:
             stdout=subprocess.PIPE,
             stderr=subprocess.STDOUT
         )
-        for i in range(1, 101):
-            await asyncio.sleep(0.1)
-            progress.set_fraction(i / 100.0)
-            progress.set_text(f"Downloading {model_name}: {i}%")
+        
+        downloading_started = False
+        
+        while True:
+            chunk = await process.stdout.read(1024)
+            if not chunk:
+                break
+            
+            output = chunk.decode('utf-8', errors='ignore')
+            lines = output.split('\r')
+            
+            for line in lines:
+                match = re.search(r"Downloading:\s+(\d+(\.\d+)?)%", line)
+                if match:
+                    downloading_started = True
+                    percent = float(match.group(1)) / 100.0
+                    GLib.idle_add(progress.set_fraction, percent)
+                    GLib.idle_add(progress.set_text, f"Downloading {model_name}: {match.group(1)}%")
+                elif "Download completed" in line and downloading_started:
+                    GLib.idle_add(progress.set_text, "Download completed")
+                    GLib.idle_add(progress.set_fraction, 1.0)
         
         await process.wait()
         if process.returncode == 0:
@@ -161,6 +179,13 @@ def update_model_ui(app) -> None:
             label.add_css_class("uninstalled-model-label")
         else:
             label.add_css_class("installed-model-label")
+            del_btn = Gtk.Button(icon_name="user-trash-symbolic")
+            del_btn.add_css_class("delete-btn")
+            del_btn.set_has_frame(False)
+            del_btn.set_tooltip_text("Delete Model")
+            # Connect the button click only once
+            del_btn.connect("clicked", lambda b, m=model_name: confirm_delete(app, m, popover))
+            box.append(del_btn)
             
         box.append(label)
         row.set_child(box)
@@ -171,6 +196,38 @@ def update_model_ui(app) -> None:
     scrolled.set_child(listbox)
     popover.set_child(scrolled)
     app.model_btn.set_popover(popover)
+
+def confirm_delete(app, model_name: str, popover: Gtk.Popover) -> None:
+    """Shows confirmation dialog before deleting a model, closing popover first."""
+    popover.popdown()
+    
+    dialog = Adw.MessageDialog(
+        transient_for=app.win,
+        heading="Delete Model?",
+        body=f"Are you sure you want to permanently delete {model_name}?"
+    )
+    dialog.add_response("cancel", "Cancel")
+    dialog.add_response("delete", "Delete")
+    dialog.set_response_appearance("delete", Adw.ResponseAppearance.DESTRUCTIVE)
+    
+    def on_response(dialog, response):
+        on_delete_response(app, dialog, response, model_name)
+
+    dialog.connect("response", on_response)
+    dialog.present()
+
+def on_delete_response(app, dialog: Adw.MessageDialog, response: str, model_name: str) -> None:
+    """Callback for deletion confirmation."""
+    if response == "delete":
+        app.add_system_message(f"Removing {model_name}...")
+        try:
+            subprocess.run(["flm", "remove", model_name], check=True)
+            app.add_system_message(f"Removed {model_name}")
+            app.models = flm.get_all_models()
+            update_model_ui(app)
+        except Exception as e:
+            app.add_system_message(f"Deletion error: {str(e)}")
+    dialog.destroy()
 
 def on_row_activated(app, listbox: Gtk.ListBox, row: Gtk.ListBoxRow, popover: Gtk.Popover) -> None:
     """Activated when a model row is selected."""

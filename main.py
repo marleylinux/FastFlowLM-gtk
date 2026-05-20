@@ -187,23 +187,10 @@ class FlmChatApp(Adw.Application):
         dialog.destroy()
 
     def update_thumbnail(self):
-        child = self.thumb_box.get_first_child()
-        while child:
-            self.thumb_box.remove(child)
-            child = self.thumb_box.get_first_child()
-
-        if self.selected_image_path:
-            img = Gtk.Image.new_from_file(self.selected_image_path)
-            img.set_pixel_size(100)
-            img.set_hexpand(True)
-            self.thumb_box.append(img)
-            btn = Gtk.Button(icon_name="window-close-symbolic")
-            btn.connect("clicked", self.on_remove_thumbnail)
-            self.thumb_box.append(btn)
+        return display.update_thumbnail(self)
 
     def on_remove_thumbnail(self, btn):
-        self.selected_image_path = None
-        self.update_thumbnail()
+        return display.on_remove_thumbnail(self)
 
     def on_allow_switch_toggled(self, action, value):
         new_state = not action.get_state().get_boolean()
@@ -280,8 +267,7 @@ class FlmChatApp(Adw.Application):
         return display.clear_status_labels(self)
 
     def scroll_to_bottom(self):
-        adj = self.scrolled.get_vadjustment()
-        adj.set_value(adj.get_upper() - adj.get_page_size())
+        return display.scroll_to_bottom(self)
 
     def load_history_metadata(self):
         self.sessions_metadata = []
@@ -539,10 +525,7 @@ class FlmChatApp(Adw.Application):
         self.chat_box.append(outer_box)
 
     def chat_box_remove_all(self):
-        child = self.chat_box.get_first_child()
-        while child:
-            self.chat_box.remove(child)
-            child = self.chat_box.get_first_child()
+        return display.chat_box_remove_all(self)
 
     def execute_new_chat(self):
         self.save_session()

@@ -12,8 +12,15 @@ source=("fastflowlm-gtk.desktop"
         "app.py"
         "main.py"
         "flm.py"
-        "utils.py")
-sha256sums=('SKIP' 'SKIP' 'SKIP' 'SKIP' 'SKIP' 'SKIP')
+        "utils.py"
+        "ui.py"
+        "sessions.py"
+        "network.py"
+        "theme.py"
+        "handlers.py"
+        "models.py"
+        "display.py")
+sha256sums=('SKIP' 'SKIP' 'SKIP' 'SKIP' 'SKIP' 'SKIP' 'SKIP' 'SKIP' 'SKIP' 'SKIP' 'SKIP' 'SKIP' 'SKIP')
 
 package() {
   # Install Python files

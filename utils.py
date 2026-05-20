@@ -24,6 +24,15 @@ CSS = """
 .accent-btn {
     background-color: @accent_bg_color;
     color: @accent_fg_color;
+    border: none;
+}
+
+.accent-btn:hover {
+    background-color: shade(@accent_bg_color, 1.1);
+}
+
+.accent-btn:active {
+    background-color: shade(@accent_bg_color, 0.9);
 }
 
 .rounded-image {

@@ -50,6 +50,7 @@ def build_main_content(app) -> Gtk.Box:
     app.header.pack_start(app.btn_sidebar)
 
     app.btn_new = Gtk.Button(icon_name="document-new-symbolic")
+    app.btn_new.add_css_class("accent-btn")
     app.btn_new.connect("clicked", app.on_new_chat)
     app.header.pack_start(app.btn_new)
     
@@ -109,7 +110,7 @@ def build_main_content(app) -> Gtk.Box:
     
     app.btn_send = Gtk.Button(icon_name="mail-send-symbolic")
     app.btn_send.add_css_class("circular")
-    app.btn_send.add_css_class("suggested-action")
+    app.btn_send.add_css_class("accent-btn")
     app.btn_send.set_valign(Gtk.Align.CENTER)
     app.btn_send.connect("clicked", app.on_send)
     app.input_box.append(app.btn_send)

@@ -1,6 +1,6 @@
 # Maintainer: Marley <warburtonmarley@proton.me>
 pkgname=fastflowlm-gtk
-pkgver=1.6.7
+pkgver=1.6.8
 pkgrel=1
 pkgdesc="A minimalist, modern desktop interface for FastFlowLM, built with GTK 4 and Libadwaita."
 arch=('any')

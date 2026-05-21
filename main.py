@@ -467,11 +467,15 @@ class FlmChatApp(Adw.Application):
 
                 if msg.get("image"):
                     try:
+                        ext = os.path.splitext(msg["image"])[1].lower().strip('.')
+                        mime_type = f"image/{ext}" if ext in ["png", "webp", "jpeg", "jpg"] else "image/jpeg"
+                        if ext == "jpg": mime_type = "image/jpeg"
+                        
                         with open(msg["image"], "rb") as image_file:
                             encoded = base64.b64encode(image_file.read()).decode("utf-8")
                             messages[-1]["content"].append({
                                 "type": "image_url", 
-                                "image_url": {"url": f"data:image/jpeg;base64,{encoded}"}
+                                "image_url": {"url": f"data:{mime_type};base64,{encoded}"}
                             })
                     except Exception as e:
                         logging.error(f"Error encoding image: {e}")

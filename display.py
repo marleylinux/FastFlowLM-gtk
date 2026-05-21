@@ -5,6 +5,7 @@ Handles UI rendering, message bubble construction, and visual status updates.
 import init_gi
 from gi.repository import Gtk, Gdk, GLib, GtkSource
 import utils
+import logging
 from typing import Optional
 
 def create_code_block(code: str, language_id: str) -> Gtk.ScrolledWindow:
@@ -66,10 +67,17 @@ def add_message(app, text: str, is_user: bool, image_path: Optional[str] = None)
     bubble_box.add_css_class("user-bubble" if is_user else "assistant-bubble")
     
     if image_path:
-        img = Gtk.Image.new_from_file(image_path)
-        img.set_pixel_size(240)
-        img.add_css_class("rounded-image")
-        bubble_box.append(img)
+        try:
+            texture = Gdk.Texture.new_from_filename(image_path)
+            img = Gtk.Image.new_from_paintable(texture)
+            img.set_pixel_size(240)
+            img.add_css_class("rounded-image")
+            bubble_box.append(img)
+        except Exception as e:
+            logging.error(f"Failed to load image {image_path}: {e}")
+            img = Gtk.Image.new_from_icon_name("image-missing-symbolic")
+            img.set_pixel_size(64)
+            bubble_box.append(img)
         
     chunks = utils.parse_message(text)
     
@@ -193,10 +201,18 @@ def update_thumbnail(app) -> None:
         child = app.thumb_box.get_first_child()
 
     if app.selected_image_path:
-        img = Gtk.Image.new_from_file(app.selected_image_path)
-        img.set_pixel_size(100)
-        img.set_hexpand(True)
-        app.thumb_box.append(img)
+        try:
+            texture = Gdk.Texture.new_from_filename(app.selected_image_path)
+            img = Gtk.Image.new_from_paintable(texture)
+            img.set_pixel_size(100)
+            img.set_hexpand(True)
+            app.thumb_box.append(img)
+        except Exception as e:
+            logging.error(f"Thumbnail load failed: {e}")
+            img = Gtk.Image.new_from_icon_name("image-missing-symbolic")
+            img.set_pixel_size(64)
+            app.thumb_box.append(img)
+
         btn = Gtk.Button(icon_name="window-close-symbolic")
         btn.connect("clicked", lambda b: on_remove_thumbnail(app))
         app.thumb_box.append(btn)

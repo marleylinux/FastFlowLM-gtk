@@ -506,7 +506,8 @@ class FlmChatApp(Adw.Application):
                                     if thinking_box and thinking_box.get_parent() == self.chat_box:
                                         self.chat_box.remove(thinking_box)
                                     full_content += text
-                                    GLib.idle_add(lambda: bubble.set_markup(utils.markdown_to_pango(full_content)))
+                                    markup = utils.markdown_to_pango(full_content)
+                                    GLib.idle_add(bubble.set_markup, markup)
                             display.scroll_to_bottom(self)
                         except json.JSONDecodeError as e:
                             logging.error(f"JSON parsing error: {e}")
@@ -528,7 +529,7 @@ class FlmChatApp(Adw.Application):
             GLib.idle_add(self.unlock_ui)
             
             if thinking_box and thinking_box.get_parent() == self.chat_box:
-                GLib.idle_add(lambda: self.chat_box.remove(thinking_box))
+                GLib.idle_add(self.chat_box.remove, thinking_box)
 
     def on_choose_color(self, action, value):
         dialog = Gtk.ColorDialog.new()

@@ -418,6 +418,14 @@ class FlmChatApp(Adw.Application):
         self.btn_attach.set_sensitive(self.is_current_model_capable())
         self.entry.grab_focus()
 
+    def unlock_ui(self):
+        """Restores user interaction capabilities to the input area."""
+        self.input_box.set_sensitive(True)
+        self.entry.set_editable(True)
+        self.btn_attach.set_sensitive(self.is_current_model_capable())
+        self.entry.grab_focus()
+        self.is_sending = False
+
     async def get_ai_response(self):
         try:
             if not self.current_model:
@@ -470,7 +478,6 @@ class FlmChatApp(Adw.Application):
             stream = await network.get_ai_response(self, bubble, thinking_box, messages)
             if not stream:
                 display.add_system_message(self, "Error: Connection lost or network endpoint failed.")
-                display.add_system_message(self, "The model server may have crashed. Please check the model status.")
                 if thinking_box.get_parent() == self.chat_box:
                     self.chat_box.remove(thinking_box)
                 
@@ -482,34 +489,36 @@ class FlmChatApp(Adw.Application):
                         self.chat_box.remove(align)
                 return
                 
-            data_stream = Gio.DataInputStream.new(stream)
-            while True:
-                line_bytes, length = await data_stream.read_line_async(GLib.PRIORITY_DEFAULT, None)
-                if line_bytes is None: break
-                
-                line = line_bytes.decode('utf-8').strip()
-                if not line or not line.startswith("data: "): continue
-                
-                content = line[6:]
-                if content == "[DONE]": break
-                
-                try:
-                    chunk = json.loads(content)
-                    if 'choices' in chunk and len(chunk['choices']) > 0:
-                        text = chunk['choices'][0].get('delta', {}).get('content')
-                        if text:
-                            if thinking_box.get_parent() == self.chat_box:
-                                self.chat_box.remove(thinking_box)
-                            full_content += text
-                            def update_bubble():
-                                try:
-                                    bubble.set_markup(utils.markdown_to_pango(full_content))
-                                except Exception as e:
-                                    print(f"Markup error: {e}")
-                            GLib.idle_add(update_bubble)
-                    display.scroll_to_bottom(self)
-                except Exception as e:
-                    print(f"Error parsing chunk: {e}")
+            try:
+                data_stream = Gio.DataInputStream.new(stream)
+                while True:
+                    line_bytes, length = await data_stream.read_line_async(GLib.PRIORITY_DEFAULT, None)
+                    if line_bytes is None: break
+                    
+                    line = line_bytes.decode('utf-8').strip()
+                    if not line: continue
+                    if line.startswith("data: "):
+                        content = line[6:]
+                        if content == "[DONE]": break
+                        
+                        try:
+                            chunk = json.loads(content)
+                            if 'choices' in chunk and len(chunk['choices']) > 0:
+                                text = chunk['choices'][0].get('delta', {}).get('content')
+                                if text:
+                                    if thinking_box.get_parent() == self.chat_box:
+                                        self.chat_box.remove(thinking_box)
+                                    full_content += text
+                                    GLib.idle_add(lambda: bubble.set_markup(utils.markdown_to_pango(full_content)))
+                            display.scroll_to_bottom(self)
+                        except json.JSONDecodeError as e:
+                            logging.error(f"JSON parsing error: {e}")
+                    else:
+                        logging.warning(f"Unexpected stream line format: {line}")
+            except Exception as e:
+                logging.error(f"Stream reading error: {e}")
+            finally:
+                stream.close(None)
             
             self.history.append({"role": "assistant", "content": full_content})
             self.save_session()

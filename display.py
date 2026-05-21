@@ -110,8 +110,6 @@ def cancel_ai_task(app) -> None:
     child = app.chat_box.get_first_child()
     while child:
         next_child = child.get_next_sibling()
-        # The spinner is a Gtk.Box containing a Gtk.Spinner and Gtk.Label.
-        # We check if it is a Gtk.Box and try to find the label inside it.
         if isinstance(child, Gtk.Box):
             is_spinner = False
             inner = child.get_first_child()
@@ -127,7 +125,8 @@ def cancel_ai_task(app) -> None:
         child = next_child
 
     app.is_sending = False
-    GLib.idle_add(app.unlock_ui)
+    if hasattr(app, "unlock_ui"):
+        GLib.idle_add(app.unlock_ui)
 
 def update_thumbnail(app) -> None:
     """Refreshes the image thumbnail preview area."""

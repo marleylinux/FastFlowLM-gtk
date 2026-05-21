@@ -6,6 +6,7 @@ import asyncio
 import display
 import os
 import flm
+from typing import Optional
 
 def on_key_pressed(app, ctrl: Gtk.EventControllerKey, keyval: int, keycode: int, state: Gdk.ModifierType) -> bool:
     """Handles Enter key press to send messages (unless SHIFT is held)."""

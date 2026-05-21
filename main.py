@@ -7,6 +7,7 @@ import fcntl
 import time
 import gi
 import logging
+import base64
 from typing import Optional, List, Dict
 
 gi.require_version("Gtk", "4.0")
@@ -130,17 +131,6 @@ class FlmChatApp(Adw.Application):
         
         GLib.idle_add(lambda: sessions.load_history_metadata(self))
         GLib.idle_add(lambda: self.run_task(self.init_server()))
-
-    # Cache for session search to avoid disk thrashing
-    _search_cache = {}
-
-    def unlock_ui(self):
-        """Restores user interaction capabilities to the input area."""
-        self.input_box.set_sensitive(True)
-        self.entry.set_editable(True)
-        self.btn_attach.set_sensitive(self.is_current_model_capable())
-        self.entry.grab_focus()
-        self.is_sending = False
 
     def on_search_changed(self, entry):
         text = entry.get_text().lower()
@@ -431,16 +421,10 @@ class FlmChatApp(Adw.Application):
         self.entry.set_editable(True)
         self.btn_attach.set_sensitive(self.is_current_model_capable())
         self.entry.grab_focus()
-
-    def unlock_ui(self):
-        """Restores user interaction capabilities to the input area."""
-        self.input_box.set_sensitive(True)
-        self.entry.set_editable(True)
-        self.btn_attach.set_sensitive(self.is_current_model_capable())
-        self.entry.grab_focus()
         self.is_sending = False
 
     async def get_ai_response(self):
+        thinking_box = None
         try:
             if not self.current_model:
                 display.add_system_message(self, "Please select a model first.")
@@ -478,7 +462,6 @@ class FlmChatApp(Adw.Application):
                 # Handle images (for the current or merged message)
                 if msg.get("image"):
                     try:
-                        import base64
                         with open(msg["image"], "rb") as image_file:
                             encoded = base64.b64encode(image_file.read()).decode('utf-8')
                             # Images are always appended to the current message's content
@@ -487,12 +470,12 @@ class FlmChatApp(Adw.Application):
                                 "image_url": {"url": f"data:image/jpeg;base64,{encoded}"}
                             })
                     except Exception as e:
-                        print(f"Error encoding image: {e}")
+                        logging.error(f"Error encoding image: {e}")
 
             stream = await network.get_ai_response(self, bubble, thinking_box, messages)
             if not stream:
                 display.add_system_message(self, "Error: Connection lost or network endpoint failed.")
-                if thinking_box.get_parent() == self.chat_box:
+                if thinking_box and thinking_box.get_parent() == self.chat_box:
                     self.chat_box.remove(thinking_box)
                 
                 # Safely remove the empty assistant bubble container
@@ -520,7 +503,7 @@ class FlmChatApp(Adw.Application):
                             if 'choices' in chunk and len(chunk['choices']) > 0:
                                 text = chunk['choices'][0].get('delta', {}).get('content')
                                 if text:
-                                    if thinking_box.get_parent() == self.chat_box:
+                                    if thinking_box and thinking_box.get_parent() == self.chat_box:
                                         self.chat_box.remove(thinking_box)
                                     full_content += text
                                     GLib.idle_add(lambda: bubble.set_markup(utils.markdown_to_pango(full_content)))
@@ -539,12 +522,12 @@ class FlmChatApp(Adw.Application):
         except asyncio.CancelledError:
             raise
         except Exception as e:
-            display.add_system_message(self, f"Connection mapping error: {str(e)}")
+            logging.error(f"Connection mapping error: {str(e)}")
         finally:
             self.is_sending = False
             GLib.idle_add(self.unlock_ui)
             
-            if thinking_box.get_parent() == self.chat_box:
+            if thinking_box and thinking_box.get_parent() == self.chat_box:
                 GLib.idle_add(lambda: self.chat_box.remove(thinking_box))
 
     def on_choose_color(self, action, value):

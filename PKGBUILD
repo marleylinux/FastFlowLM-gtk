@@ -19,8 +19,8 @@ source=("fastflowlm-gtk.desktop"
         "network.py"
         "theme.py"
         "handlers.py"
-        "models.py",
-        "display.py",
+        "models.py"
+        "display.py"
         "init_gi.py")
         sha256sums=('SKIP' 'SKIP' 'SKIP' 'SKIP' 'SKIP' 'SKIP' 'SKIP' 'SKIP' 'SKIP' 'SKIP' 'SKIP' 'SKIP' 'SKIP' 'SKIP')
 

@@ -10,7 +10,7 @@ if [ "$EUID" -ne 0 ]; then
 fi
 
 echo "Installing system dependencies..."
-pacman -S --noconfirm fastflowlm python python-gobject gtk4 libadwaita libsoup3 gtksourceview5 python-psutil
+pacman -S --noconfirm fastflowlm python python-gobject gtk4 libadwaita libsoup3 gtksourceview5 python-psutil xrt-plugin-amdxdna
 
 echo "Installing FastFlowLM-gtk files..."
 

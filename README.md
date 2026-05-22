@@ -35,13 +35,34 @@ Here are the shortcuts I set up to make navigation quick and easy:
 
 ---
 
+## Performance Tip: Memory Locking (memlock)
+
+To get the absolute best performance out of local LLMs, you'll want to enable memory locking (`memlock`). By default, Linux might swap parts of your active model out of RAM and onto your disk, which makes responses super slow. Memory locking forces your system to keep the model pinned in RAM.
+
+Here is how you can set it up:
+
+1. Open `/etc/security/limits.conf` in your favorite editor (you'll need `sudo`):
+   ```bash
+   sudo nano /etc/security/limits.conf
+   ```
+2. Add these two lines at the bottom of the file (replace `your-username` with your actual Linux username, like `marley`):
+   ```text
+   your-username    soft    memlock    unlimited
+   your-username    hard    memlock    unlimited
+   ```
+3. Log out of your desktop session and log back in (or restart) for the new limits to take effect.
+
+Once configured, your local model server will run noticeably faster and smoother!
+
+---
+
 ## Getting Started (Arch Linux)
 
 Since I run Arch, I packaged it for Pacman and the AUR. You'll need `fastflowlm` installed on your system.
 
 ### 1. Grab dependencies via Pacman:
 ```bash
-sudo pacman -S gtk4 libadwaita gtksourceview5 libsoup3 python-gobject python-psutil fastflowlm
+sudo pacman -S gtk4 libadwaita gtksourceview5 libsoup3 python-gobject python-psutil fastflowlm xrt-plugin-amdxdna
 ```
 
 ### 2. Install from the AUR:

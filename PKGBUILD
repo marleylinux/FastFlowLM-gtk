@@ -6,7 +6,7 @@ pkgdesc="A minimalist, modern desktop interface for FastFlowLM, built with GTK 4
 arch=('any')
 url="https://github.com/marleylinux/FastFlowLM-GTK"
 license=('MIT')
-depends=('python' 'python-gobject' 'gtk4' 'libadwaita' 'libsoup3' 'gtksourceview5' 'python-psutil' 'fastflowlm')
+depends=('python' 'python-gobject' 'gtk4' 'libadwaita' 'libsoup3' 'gtksourceview5' 'python-psutil' 'fastflowlm' 'xrt-plugin-amdxdna')
 makedepends=('imagemagick')
 source=("com.marley.FastFlowLM-gtk.desktop"
         "flm-gtk.webp"

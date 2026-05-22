@@ -1,62 +1,64 @@
 # FastFlowLM-gtk
 
-A clean, native GTK4 chat client for [FastFlowLM](https://github.com/FastFlowLM/FastFlowLM).
+A native GTK4 chat client for [FastFlowLM](https://github.com/FastFlowLM/FastFlowLM).
 
-I built this because I wanted something that actually felt like it belonged on the desktop — no web UI, no Electron, just a proper native app that works well with tiling window managers and GNOME.
+I'm a hobbyist coder who loves desktop Linux, and I built this because I wanted something that actually felt like it belonged on my desktop. I got tired of web UIs and heavy Electron apps eating up my RAM just to talk to a local model. This is a simple, lightweight GTK4 app that works nicely with GNOME and tiling window managers.
 
+This is a personal hobby project I wrote just for the fun of it. There are no tracking scripts, no telemetry, and no bloated web frameworks here—just a pure local desktop tool.
 
-## Why I Made This
+---
 
-Most local LLM interfaces feel like they were designed for browsers. I wanted something lightweight, fast, and native. Something where I could just open it, pick a model, and start chatting without dealing with Docker, ports, or heavy web interfaces.
+## Things I Built It to Do
 
+*   **Super Fast Model Swapping** – You can download, load, and switch models directly in the app without touching the terminal.
+*   **Real Syntax Highlighting** – Powered by `GtkSourceView 5` so code blocks actually look good (supporting Python, C++, JS, Bash, and more).
+*   **Vision/Image Support** – If you are running a vision model (VLM), you can drag and drop images directly into the chat.
+*   **Completely Offline & Local** – Everything stays on your machine, exactly as it should be.
+*   **Keyboard Shortcuts** – Built for people who prefer using the keyboard instead of clicking around.
+*   **RAM Safety** – It shows a friendly warning before loading a model that might freeze your system if you're low on RAM.
 
-## What It Does
-
-- One-click model management — Download, load, and switch models directly from the app
-- Proper syntax highlighting — Uses GtkSourceView 5 (supports Python, C++, Bash, JS, etc.)
-- Vision support — Works with VLMs and handles images properly
-- Keyboard-first design — Full hotkey support (Ctrl+N, F9, Shift+Enter, etc.)
-- Smart session handling — Auto-saves everything, fast search, and doesn't lose your chats
-- RAM safety — Warns you before loading a model that might freeze your system
-
-It’s built with GTK 4 + Libadwaita, so it looks and feels like a real Linux app.
-
+---
 
 ## Keyboard Shortcuts
 
-|-----------------------------------------------|
-| Shortcut            | Action                  |
-|---------------------|-------------------------|
-| Ctrl + N            | New chat                |
-| Ctrl + F            | Search chats            |
-| F9                  | Toggle sidebar          |
-| Ctrl + Shift + C    | Copy last response      |
-| Ctrl + ? / Ctrl + / | Show shortcuts          |
-| Enter               | Send message            |
-| Shift + Enter       | New line                |
-|-----------------------------------------------|
+Here are the shortcuts I set up to make navigation quick and easy:
 
-## Installation (Arch Linux)
+| Shortcut | Action |
+| :--- | :--- |
+| **Ctrl + N** | Start a new chat session |
+| **Ctrl + F** | Search through chat history |
+| **F9** | Toggle the sidebar display |
+| **Ctrl + Shift + C** | Copy the last assistant response to your clipboard |
+| **Ctrl + ?** or **Ctrl + /** | Show the shortcut helper dialog |
+| **Enter** | Send your message |
+| **Shift + Enter** | Insert a new line in the text box |
 
-```
+---
+
+## Getting Started (Arch Linux)
+
+Since I run Arch, I packaged it for Pacman and the AUR. You'll need `fastflowlm` installed on your system.
+
+### 1. Grab dependencies via Pacman:
+```bash
 sudo pacman -S gtk4 libadwaita gtksourceview5 libsoup3 python-gobject python-psutil fastflowlm
 ```
 
-### yay (Recommended)
-
+### 2. Install from the AUR:
 ```bash
 yay -S fastflowlm-gtk
 ```
 
-### Manual Build
-
-``` 
+### 3. Or install manually:
+If you prefer to clone and run the installation script:
+```bash
 git clone https://github.com/marleylinux/FastFlowLM-gtk
 cd FastFlowLM-gtk
 sudo ./install.sh
 ```
-### Run directly
 
-```
+### Running Directly
+If you want to run it directly from the source directory without installing it globally:
+```bash
 python app.py
 ```

@@ -8,10 +8,10 @@ import time
 from typing import Optional
 
 def on_key_pressed(app, ctrl: Gtk.EventControllerKey, keyval: int, keycode: int, state: Gdk.ModifierType) -> bool:
-    # handle enter/shift+enter
+    # check if the user pressed enter or shift+enter to type
     if keyval in (Gdk.KEY_Return, Gdk.KEY_KP_Enter):
         if state & Gdk.ModifierType.SHIFT_MASK:
-            # add newline
+            # insert a newline break into the text view
             buffer = app.entry.get_buffer()
             buffer.insert_at_cursor("\n")
             return True
@@ -21,7 +21,7 @@ def on_key_pressed(app, ctrl: Gtk.EventControllerKey, keyval: int, keycode: int,
     return False
 
 def on_send(app, widget: Optional[Gtk.Widget]) -> None:
-    # send message
+    # send the message prompt out to the model
     import logging
     if app.is_sending:
         return
@@ -33,23 +33,23 @@ def on_send(app, widget: Optional[Gtk.Widget]) -> None:
     if not text and not app.selected_attachments:
         return
     
-    # new session id
+    # create a unique session ID if we don't have one yet
     if not app.current_session_id:
         app.current_session_id = str(int(time.time()))
         
     app.is_sending = True
     
-    # lock ui
+    # disable inputs briefly while we wait for the model to reply
     app.input_box.set_sensitive(False)
     app.set_entry_locked(True)
     if hasattr(app, "update_shortcuts_sensitivity"):
         app.update_shortcuts_sensitivity()
     
-    # attachments
+    # let's package our attached files and pictures
     attachments_for_history = []
     text_blocks = []
     
-    # file extensions
+    # lookup table to map file extensions to markdown languages
     ext_map = {
         '.py': 'python',
         '.cpp': 'cpp',
@@ -119,11 +119,11 @@ def on_attach_clicked(app, btn):
     dialog = Gtk.FileChooserNative.new("Select Files", app.win, Gtk.FileChooserAction.OPEN, "Open", "Cancel")
     dialog.set_select_multiple(True)
     
-    # allow these files
+    # set up standard file type filters
     filter = Gtk.FileFilter()
     filter.set_name("All Supported Files")
     
-    # allow images for vlm
+    # if we are using a vision model, let them pick image formats
     if app.is_current_model_vlm():
         filter.add_mime_type("image/png")
         filter.add_mime_type("image/jpeg")
@@ -133,7 +133,7 @@ def on_attach_clicked(app, btn):
         filter.add_pattern("*.jpeg")
         filter.add_pattern("*.webp")
         
-    # text and code
+    # also allow text and code file formats
     filter.add_mime_type("text/plain")
     filter.add_pattern("*.txt")
     filter.add_pattern("*.py")
@@ -308,7 +308,7 @@ def on_clear_history_response(app, dialog, response):
             app.favourited_chat = None
             app.save_config()
             app.history = []
-            # Invalidate search cache
+            # invalidate the search cache so the sidebar updates instantly
             if hasattr(app, '_search_cache'):
                 app._search_cache = {}
             app.update_model_ui()

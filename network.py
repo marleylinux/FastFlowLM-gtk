@@ -1,18 +1,18 @@
-# talk to the local llm
+# handles talking to the local LLM server
 import json
 import init_gi
 from gi.repository import Soup, GLib
 from typing import List
 
 async def get_ai_response(app, bubble, thinking_label, messages: List[dict]):
-    # send prompt
+    # build the payload and send it over to the server
     payload = {
         "model": app.current_model,
         "messages": messages,
         "stream": True
     }
     
-    # retry loop
+    # let's try a few times in case the server is busy starting up
     for attempt in range(5):
         try:
             msg = Soup.Message.new("POST", f"{app.BASE_URL}/chat/completions")
@@ -25,7 +25,7 @@ async def get_ai_response(app, bubble, thinking_label, messages: List[dict]):
                 return stream
             
             print(f"Server returned status {status} on attempt {attempt + 1}")
-            # hard error
+            # if the server tells us something is wrong, we shouldn't keep retrying
             if status != Soup.Status.NONE and status < 500:
                 break
                 

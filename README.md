@@ -37,9 +37,9 @@ Here are the shortcuts I set up to make navigation quick and easy:
 
 ## Required Setup: Memory Locking (memlock)
 
-To load and run local models (especially when utilizing hardware acceleration like Ryzen AI / XDNA), you need to configure memory locking (`memlock`). Without this setup, the local model server may fail to load models or crash. Memory locking allows the system to pin models securely in RAM.
+To load and run local models, `fastflowlm` requires memory locking (`memlock`) to be set to infinity. Without this setup, the local model server may fail to load models or crash. Memory locking allows the system to pin models securely in RAM.
 
-Here is how you can set it up:
+Here is how you can set it to infinity (`unlimited`):
 
 1. Open `/etc/security/limits.conf` in your favorite editor (you'll need `sudo`):
    ```bash

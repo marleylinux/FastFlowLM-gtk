@@ -4,7 +4,7 @@ GTK4 chat app for FastFlowLM. Runs local models without Electron eating all your
 
 I put it together because I wanted something that felt normal on a Linux desktop.
 
-Powered by [FastFlowLM](https://github.com/FastFlowLM/FastFlowLM)
+Powered by [FastFlowLM](https://github.com/FastFlowLM/FastFlowLM) ❤️
 
 ## What it does
 

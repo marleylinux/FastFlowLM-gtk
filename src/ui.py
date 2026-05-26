@@ -1,4 +1,4 @@
-# builds and configures GTK/Libadwaita UI
+# ui
 import init_gi
 from gi.repository import Gtk, Adw
 import display
@@ -19,13 +19,13 @@ def get_cpu_name() -> str:
             for line in f:
                 if "model name" in line:
                     name = line.split(":", 1)[1].strip()
-                    # Clean up graphics/processor suffixes robustly
+                    # clean suffixes
                     if " w/" in name:
                         name = name.split(" w/", 1)[0]
                     if " with " in name:
                         name = name.split(" with ", 1)[0]
                     name = name.replace("Processor", "")
-                    # Shorten name if too long
+                    # shorten name
                     if len(name) > 35:
                         name = name[:32] + "..."
                     return name.strip()
@@ -115,13 +115,13 @@ def _build_monitor_card(icon_name: str, name: str, val_str: str, unit_str: str, 
     val_row.append(unit_lbl)
     card.append(val_row)
 
-    # Bottom Row: Progress bar
+    # progress bar
     bar = Gtk.ProgressBar()
     bar.add_css_class("usage-bar")
     bar.set_fraction(fraction)
     card.append(bar)
 
-    # Attach references for easy live updates!
+    # refs for updates
     card._val_lbl = val_lbl
     card._bar = bar
     card._name_lbl = name_lbl
@@ -131,7 +131,7 @@ def _build_monitor_card(icon_name: str, name: str, val_str: str, unit_str: str, 
     return card
 
 def show_welcome_message(app):
-    # show welcome screen
+    # welcome screen
     display.chat_box_remove_all(app)
 
     # lock controls
@@ -144,16 +144,16 @@ def show_welcome_message(app):
     app.btn_repair.set_sensitive(False)
     app.btn_attach.set_sensitive(False)
 
-    # Welcome Dashboard Outer Container
+    # dashboard container
     welcome_container = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=16)
     welcome_container.set_hexpand(True)
     welcome_container.set_halign(Gtk.Align.FILL)
 
-    # 1. CPU and Hero status banner
+    # hero banner
     hero_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=16)
     hero_box.add_css_class("hero-box")
     
-    # Left: Pulsating Status
+    # status pill
     status_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
     status_box.set_valign(Gtk.Align.CENTER)
     status_pill = Gtk.Label(label="● System Status")
@@ -161,7 +161,7 @@ def show_welcome_message(app):
     status_box.append(status_pill)
     hero_box.append(status_box)
 
-    # Center: Icon + Text
+    # center content
     center_content = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=16)
     center_content.set_hexpand(True)
     center_content.set_halign(Gtk.Align.CENTER)
@@ -195,8 +195,7 @@ def show_welcome_message(app):
 
     welcome_container.append(hero_box)
 
-    # 2. Diagnostic Warning Row for NPU validation results
-    # We create it invisible by default, and update it from main.py validation callback
+    # diagnostic banner
     diag_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=4)
     diag_box.add_css_class("diagnostic-row")
     diag_box.add_css_class("warning") # Default style
@@ -229,17 +228,16 @@ def show_welcome_message(app):
     app.diagnostic_fix_btn = diag_fix_btn
     welcome_container.append(diag_box)
 
-    # 3. Two columns / widgets:
-    # We want a homogeneous grid for System Resources & original Welcome details
+    # main grid
     main_grid = Gtk.Grid()
     main_grid.set_column_homogeneous(True)
     main_grid.set_column_spacing(16)
     main_grid.set_row_spacing(16)
 
-    # Column 1: System Resources (RAM and NPU Status)
+    # resources column
     res_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=12)
     
-    # Section Header
+    # section header
     sec_header = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=8)
     sec_header.add_css_class("section-title-box")
     sec_icon = Gtk.Image.new_from_icon_name("drive-harddisk-symbolic")
@@ -250,10 +248,10 @@ def show_welcome_message(app):
     sec_header.append(sec_lbl)
     res_box.append(sec_header)
 
-    # Cards Box - Stacking vertically so cards extend horizontally
+    # cards box
     cards_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=12)
 
-    # RAM monitor card
+    # ram card
     import psutil
     mem = psutil.virtual_memory()
     total_gb = mem.total / (1024 ** 3)
@@ -267,7 +265,7 @@ def show_welcome_message(app):
         "GB", 
         percent
     )
-    # Add limit badge to RAM card for nice UI
+    # limit badge
     top_box = ram_card.get_first_child()
     lim_lbl = Gtk.Label(label=f"{total_gb:.0f}GB Max")
     lim_lbl.add_css_class("monitor-limit-badge")
@@ -276,7 +274,7 @@ def show_welcome_message(app):
 
     cards_box.append(ram_card)
 
-    # NPU Status monitor card (moved below the RAM card)
+    # npu card
     npu_card = _build_monitor_card(
         "cpu-symbolic",
         "AMD NPU",
@@ -303,7 +301,7 @@ def show_welcome_message(app):
 
     main_grid.attach(res_box, 0, 0, 1, 1)
 
-    # Column 2: Welcome Information & Actions
+    # info column
     welcome_info_card = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=12)
     welcome_info_card.add_css_class("monitor-card")
     welcome_info_card.set_vexpand(True)
@@ -572,6 +570,14 @@ def build_main_content(app) -> Adw.ToolbarView:
     app.btn_attach.set_valign(Gtk.Align.CENTER)
     app.btn_attach.connect("clicked", app.on_attach_clicked)
     input_container.append(app.btn_attach)
+
+    from gi.repository import Gdk
+    drop_target = Gtk.DropTarget.new(Gdk.FileList, Gdk.DragAction.COPY)
+    def _handle_drop(_t, v, _x, _y):
+        import handlers
+        return handlers.on_files_dropped(app, v)
+    drop_target.connect("drop", _handle_drop)
+    input_container.add_controller(drop_target)
     
     app.input_box.append(input_container)
     
@@ -592,33 +598,54 @@ def build_main_content(app) -> Adw.ToolbarView:
 
 def build_memlock_page(app) -> Adw.ToolbarView:
     toolbar = Adw.ToolbarView()
+
     header = Adw.HeaderBar()
+    header.add_css_class("main-header")
+    win_title = Adw.WindowTitle()
+    win_title.set_title("FastFlowLM-gtk")
+    win_title.set_subtitle("System Configuration Required")
+    header.set_title_widget(win_title)
     toolbar.add_top_bar(header)
-    
+
     status = Adw.StatusPage()
     status.set_icon_name("memory-symbolic")
     status.set_title("Memory Locking Required")
-    
+
     import os
     conf_path = "/etc/security/limits.d/99-fastflowlm-gtk.conf"
-    
+
     if os.path.exists(conf_path):
         status.set_description(
-            "Local LLMs require unlimited memory locking (memlock).\n"
-            "The system limits have been updated, but you must restart your computer\n"
-            "(or log out and log back in) for the changes to take effect."
+            "The installer already created the memlock configuration for you.\n\n"
+            "You must restart your computer (or log out and log back in) for it to take effect.\n"
+            "FastFlowLM-gtk cannot continue until unlimited memory locking is active."
         )
+
+        btn_reboot = Gtk.Button(label="Reboot Now")
+        btn_reboot.add_css_class("destructive-action")
+        btn_reboot.add_css_class("pill")
+        btn_reboot.set_halign(Gtk.Align.CENTER)
+
+        def on_reboot(_b):
+            import subprocess
+            subprocess.run(["reboot"])
+
+        btn_reboot.connect("clicked", on_reboot)
+
+        box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
+        box.append(btn_reboot)
+        status.set_child(box)
     else:
         status.set_description(
             "Local LLMs require unlimited memory locking (memlock) to run efficiently.\n"
-            "Your system currently restricts this."
+            "Your system currently restricts this.\n\n"
+            "The installer should have already configured this for you, but a reboot may be required."
         )
         btn = Gtk.Button(label="Configure Automatically")
         btn.add_css_class("suggested-action")
         btn.add_css_class("pill")
         btn.set_halign(Gtk.Align.CENTER)
-        btn.set_margin_top(16)
-        
+
         def on_fix(_b):
             import subprocess
             cmd = "echo '* - memlock unlimited' > /etc/security/limits.d/99-fastflowlm-gtk.conf"
@@ -631,11 +658,28 @@ def build_memlock_page(app) -> Adw.ToolbarView:
                         "for the changes to take effect."
                     )
                     btn.set_visible(False)
+                    btn_reboot_manual.set_visible(True)
             except Exception as e:
                 print(e)
-        
+
         btn.connect("clicked", on_fix)
-        status.set_child(btn)
+
+        btn_reboot_manual = Gtk.Button(label="Reboot Now")
+        btn_reboot_manual.add_css_class("destructive-action")
+        btn_reboot_manual.add_css_class("pill")
+        btn_reboot_manual.set_halign(Gtk.Align.CENTER)
+        btn_reboot_manual.set_margin_top(8)
+
+        def on_reboot_manual(_b):
+            import subprocess
+            subprocess.run(["reboot"])
+
+        btn_reboot_manual.connect("clicked", on_reboot_manual)
+
+        box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
+        box.append(btn)
+        box.append(btn_reboot_manual)
+        status.set_child(box)
 
     toolbar.set_content(status)
     return toolbar

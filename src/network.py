@@ -1,7 +1,8 @@
-# chat streaming request
+# network
 import json
 import init_gi
 import logging
+import utils
 from gi.repository import Soup, GLib
 from typing import List
 
@@ -19,7 +20,7 @@ async def get_ai_response(app, bubble, thinking_label, messages: List[dict]):
             msg = Soup.Message.new("POST", f"{app.BASE_URL}/chat/completions")
             msg.set_request_body_from_bytes("application/json", GLib.Bytes.new(json.dumps(payload).encode()))
             
-            stream = await app.session.send_async(msg, GLib.PRIORITY_DEFAULT, None)
+            stream = await utils.gio_async(app.session, "send_async", msg, GLib.PRIORITY_DEFAULT, None)
             
             status = msg.get_status()
             if status == Soup.Status.OK:

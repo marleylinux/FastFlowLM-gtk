@@ -1,4 +1,4 @@
-# handles rendering chat interface elements
+# display
 import init_gi
 from gi.repository import Gtk, Gdk, GLib, GtkSource, Pango
 import utils
@@ -6,7 +6,7 @@ import logging
 from typing import Optional
 
 def create_code_block(code: str, language_id: str) -> Gtk.ScrolledWindow:
-    # create code view with syntax highlighting
+    # code block
     lang_manager = GtkSource.LanguageManager.get_default()
     
     # map markdown language names to GTK source IDs

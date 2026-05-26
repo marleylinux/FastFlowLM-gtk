@@ -274,7 +274,6 @@ def on_clear_history_response(app, dialog, response):
             app.favourited_chat = None
             app.save_config()
             app.history = []
-            # invalidate search cache
             if hasattr(app, '_search_cache'):
                 app._search_cache = {}
             app.update_model_ui()
@@ -284,3 +283,92 @@ def on_clear_history_response(app, dialog, response):
         except Exception as e:
             display.add_system_message(app, f"Error clearing history: {e}")
     dialog.destroy()
+
+
+def on_files_dropped(app, file_list):
+    if not file_list:
+        return False
+
+    # Respect the same 3-attachment hard limit as the button path
+    if len(getattr(app, "selected_attachments", [])) >= 3:
+        dialog = Adw.MessageDialog(
+            transient_for=app.win,
+            heading="Attachment Limit Reached",
+            body="You can only have up to 3 attachments at once."
+        )
+        dialog.add_response("ok", "OK")
+        dialog.set_response_appearance("ok", Adw.ResponseAppearance.SUGGESTED)
+        dialog.present()
+        return False
+
+    # Try to extract paths from Gdk.FileList (modern GTK4 way)
+    paths = []
+    try:
+        if hasattr(file_list, "get_files"):
+            gfiles = file_list.get_files()
+            for i in range(gfiles.get_n_items()):
+                f = gfiles.get_item(i)
+                p = f.get_path() if hasattr(f, "get_path") else None
+                if p:
+                    paths.append(p)
+        else:
+            # Fallback for some drag payloads
+            for f in file_list:
+                if hasattr(f, "get_path"):
+                    p = f.get_path()
+                    if p:
+                        paths.append(p)
+    except Exception as e:
+        import logging
+        logging.error(f"file list error: {e}")
+        return False
+
+    if not paths:
+        return False
+
+    added_any = False
+    added_any_exceeded = False
+
+    for path in paths:
+        if len(app.selected_attachments) >= 3:
+            added_any_exceeded = True
+            break
+
+        if not path or not os.path.exists(path):
+            continue
+
+        lower = path.lower()
+        is_img = lower.endswith(('.png', '.jpg', '.jpeg', '.webp'))
+
+        if is_img and not app.is_current_model_vlm():
+            warn = Adw.MessageDialog(
+                transient_for=app.win,
+                heading="Vision Model Required",
+                body="The current model does not support images. Please switch to a vision model (VLM) or drop a text/code file instead."
+            )
+            warn.add_response("ok", "OK")
+            warn.set_response_appearance("ok", Adw.ResponseAppearance.SUGGESTED)
+            warn.present()
+            continue
+
+        name = os.path.basename(path)
+        att_type = "image" if is_img else "text"
+
+        if not any(att["path"] == path for att in app.selected_attachments):
+            app.selected_attachments.append({"path": path, "name": name, "type": att_type})
+            added_any = True
+
+    if added_any:
+        app.update_thumbnail()
+
+    if added_any_exceeded:
+        limit_dialog = Adw.MessageDialog(
+            transient_for=app.win,
+            heading="Attachment Limit Reached",
+            body="You can only select up to 3 attachments at once. Some files were not added."
+        )
+        limit_dialog.add_response("ok", "OK")
+        limit_dialog.set_response_appearance("ok", Adw.ResponseAppearance.SUGGESTED)
+        limit_dialog.present()
+
+    return True

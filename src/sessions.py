@@ -1,4 +1,4 @@
-# saving and loading chat sessions
+# sessions
 import json
 import os
 import time

@@ -890,18 +890,13 @@ class FlmChatApp(Adw.Application):
         dialog.destroy()
 
     async def _apply_memlock_fix_async(self):
-        cmd = (
-            "rm -f /etc/security/limits.d/99-fastflowlm-memlock.conf; "
-            "sed -i '/^\\* soft memlock unlimited/d' /etc/security/limits.conf; "
-            "sed -i '/^\\* hard memlock unlimited/d' /etc/security/limits.conf; "
-            "[ -n \"$(tail -c1 /etc/security/limits.conf)\" ] && echo \"\" >> /etc/security/limits.conf; "
-            "echo '* soft memlock unlimited' >> /etc/security/limits.conf && "
-            "echo '* hard memlock unlimited' >> /etc/security/limits.conf && "
-            "sed -i 's/^#*DefaultLimitMEMLOCK=.*/DefaultLimitMEMLOCK=infinity/' /etc/systemd/system.conf"
-        )
+        # Use the consolidated limits.d approach
+        conf_file = "/etc/security/limits.d/99-fastflowlm-gtk.conf"
+        cmd = f"mkdir -p /etc/security/limits.d && echo '* - memlock unlimited' > {conf_file} && chmod 644 {conf_file}"
+        
         try:
             proc = await asyncio.create_subprocess_exec(
-                "pkexec", "bash", "-c", cmd,
+                "pkexec", "sh", "-c", cmd,
                 stdout=subprocess.PIPE,
                 stderr=subprocess.PIPE
             )
@@ -910,8 +905,8 @@ class FlmChatApp(Adw.Application):
             if proc.returncode == 0:
                 dialog = Adw.MessageDialog(
                     transient_for=self.win,
-                    heading="Fix Applied Successfully",
-                    body="The memory lock limits have been updated.\n\nYour system needs to be rebooted for these changes to take effect."
+                    heading="Configuration Applied",
+                    body="System memory limits have been updated.\n\nYou must restart your computer (or log out and log back in) for the changes to take effect."
                 )
                 dialog.add_response("later", "Reboot Later")
                 dialog.add_response("reboot", "Reboot Now")
@@ -1100,7 +1095,7 @@ class FlmChatApp(Adw.Application):
                             logging.error(f"Error encoding image: {e}")
 
                 if images_to_encode:
-                    process_images()
+                    await asyncio.to_thread(process_images)
 
             stream = await network.get_ai_response(self, bubble, thinking_box, messages)
             if not stream:
@@ -1109,7 +1104,10 @@ class FlmChatApp(Adw.Application):
 
             data_stream = Gio.DataInputStream.new(stream)
             while True:
-                line_bytes, length = await data_stream.read_line_async(GLib.PRIORITY_DEFAULT, None)
+                line_bytes_result = await utils.gio_async(data_stream, "read_line_async", GLib.PRIORITY_DEFAULT, None)
+                if line_bytes_result is None: break
+                
+                line_bytes, length = line_bytes_result
                 if line_bytes is None: break
                 line = line_bytes.decode("utf-8").strip()
                 if not line: continue

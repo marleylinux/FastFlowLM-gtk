@@ -1,9 +1,9 @@
-# load/set accent colors
+# theme
 import os
 import json
 import utils
 
-# Theme palettes matching Ryzenadj-gtk
+# palettes
 THEME_PALETTES = {
     "default": {
         "accent": "#3584e4", # Adwaita Blue
@@ -57,7 +57,7 @@ THEME_PALETTES = {
 }
 
 def load_theme_name() -> str:
-    # read theme name from config
+    # load theme name
     config_path = os.path.expanduser("~/.config/flm/theme.json")
     if os.path.exists(config_path):
         try:

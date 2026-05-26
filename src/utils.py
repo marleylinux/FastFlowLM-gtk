@@ -1,6 +1,30 @@
 import os
 import json
 import re
+import asyncio
+from gi.repository import Gio, GLib
+
+async def gio_async(obj, method_name, *args):
+    """
+    Adapter to use GIO async methods with await.
+    Example: await gio_async(stream, 'read_line_async', GLib.PRIORITY_DEFAULT, None)
+    """
+    loop = asyncio.get_running_loop()
+    future = loop.create_future()
+
+    def callback(source, res, *user_data):
+        try:
+            # Dynamically find the finish method
+            finish_name = method_name.replace("_async", "") + "_finish"
+            finish_method = getattr(source, finish_name)
+            result = finish_method(res)
+            loop.call_soon_threadsafe(future.set_result, result)
+        except Exception as e:
+            loop.call_soon_threadsafe(future.set_exception, e)
+
+    # Call the async method
+    getattr(obj, method_name)(*args, callback)
+    return await future
 
 CSS = """
 /* chat bg */
@@ -812,11 +836,11 @@ def markdown_to_pango(text: str) -> str:
         return ""
     text = text.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
     
-    # Bold
+    # bold
     text = re.sub(r'\*\*(.*?)\*\*', r'<b>\1</b>', text)
     text = re.sub(r'__(.*?)__', r'<b>\1</b>', text)
     
-    # Italics
+    # italics
     text = re.sub(r'\*(.*?)\*', r'<i>\1</i>', text)
     text = re.sub(r'_(.*?)_', r'<i>\1</i>', text)
     

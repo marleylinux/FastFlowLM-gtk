@@ -1,4 +1,4 @@
-# manage model state and selection UI
+# models
 import init_gi
 from gi.repository import Gtk, Adw, GLib
 import asyncio
@@ -12,12 +12,12 @@ import utils
 from typing import Optional
 
 async def init_server(app) -> None:
-    # fetch initial model list
+    # get models
     app.models = flm.get_all_models()
     app.update_model_ui()
 
 async def wait_for_server(app) -> None:
-    # wait for server to start listening
+    # wait for server
     app.model_loading = True
     app.set_entry_locked(True)
     app.btn_send.set_sensitive(False)

@@ -63,7 +63,8 @@ def load_theme_name() -> str:
         try:
             with open(config_path, "r") as f:
                 return json.load(f).get("theme_name", "default")
-        except Exception: pass
+        except Exception:
+            pass
     return "default"
 
 def apply_theme(app, theme_name: str) -> None:
@@ -76,11 +77,11 @@ def apply_theme(app, theme_name: str) -> None:
     if theme_name != "default":
         css_lines.append(f"@define-color accent_color {accent};")
         css_lines.append(f"@define-color accent_bg_color {accent};")
-        css_lines.append(f"@define-color accent_fg_color #ffffff;")
+        css_lines.append("@define-color accent_fg_color #ffffff;")
         css_lines.append(f"@define-color suggested_bg_color {accent};")
-        css_lines.append(f"@define-color suggested_fg_color #ffffff;")
+        css_lines.append("@define-color suggested_fg_color #ffffff;")
         css_lines.append(f"@define-color selection_bg_color {accent};")
-        css_lines.append(f"@define-color selection_fg_color #ffffff;")
+        css_lines.append("@define-color selection_fg_color #ffffff;")
         
         # Explicit overrides for buttons and entries to force them to use the accent
         css_lines.append(".suggested-action { background-color: @accent_bg_color; color: @accent_fg_color; }")
@@ -88,10 +89,11 @@ def apply_theme(app, theme_name: str) -> None:
         css_lines.append("selection { background-color: @accent_bg_color; color: @accent_fg_color; }")
     else:
         # For default, use standard Adwaita blue
-        css_lines.append(f"@define-color accent_bg_color #3584e4;")
+        css_lines.append("@define-color accent_bg_color #3584e4;")
 
     # Inject dynamic sidebar and badge colors
-    css_lines.append(f"@define-color sidebar_bg_color {sidebar_bg};")
+    if sidebar_bg != "@sidebar_bg_color":
+        css_lines.append(f"@define-color sidebar_bg_color {sidebar_bg};")
     css_lines.append(f"@define-color installed_badge_fg {palette['installed_fg']};")
     css_lines.append(f"@define-color installed_badge_bg {palette['installed_bg']};")
     css_lines.append(f"@define-color vlm_badge_fg {palette['vlm_fg']};")

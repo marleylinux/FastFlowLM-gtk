@@ -1,11 +1,10 @@
 # display
-import init_gi
 from gi.repository import Gtk, Gdk, GLib, GtkSource, Pango
 import utils
 import logging
 from typing import Optional
 
-def create_code_block(code: str, language_id: str) -> Gtk.ScrolledWindow:
+def create_code_block(code: str, language_id: str) -> Gtk.Widget:
     # code block
     lang_manager = GtkSource.LanguageManager.get_default()
     
@@ -54,7 +53,22 @@ def create_code_block(code: str, language_id: str) -> Gtk.ScrolledWindow:
     scrolled.set_min_content_width(650)  # comfortable reading width
     scrolled.set_max_content_height(600)
     scrolled.set_child(view)
-    return scrolled
+    
+    overlay = Gtk.Overlay()
+    overlay.set_child(scrolled)
+    
+    copy_btn = Gtk.Button.new_from_icon_name("edit-copy-symbolic")
+    copy_btn.add_css_class("flat")
+    copy_btn.add_css_class("bubble-action-btn")
+    copy_btn.set_tooltip_text("Copy Code")
+    copy_btn.set_halign(Gtk.Align.END)
+    copy_btn.set_valign(Gtk.Align.START)
+    copy_btn.set_margin_end(6)
+    copy_btn.set_margin_top(6)
+    copy_btn.connect("clicked", lambda b: copy_to_clipboard(code))
+    
+    overlay.add_overlay(copy_btn)
+    return overlay
 
 def render_message_chunks(app, bubble_box, text: str) -> Optional[Gtk.Label]:
     if text:
@@ -72,7 +86,12 @@ def render_message_chunks(app, bubble_box, text: str) -> Optional[Gtk.Label]:
             bubble.set_selectable(True)
             bubble.set_xalign(0)
             bubble.set_use_markup(True)
-            bubble.set_markup(utils.markdown_to_pango(content))
+            try:
+                bubble.set_markup(utils.markdown_to_pango(content))
+            except Exception as e:
+                logging.error(f"Failed to set pango markup: {e}")
+                bubble.set_use_markup(False)
+                bubble.set_text(content)
             bubble_box.append(bubble)
             last_bubble = bubble
     return last_bubble
@@ -237,35 +256,9 @@ def chat_box_remove_all(app) -> None:
         child = app.chat_box.get_first_child()
 
 def cancel_ai_task(app) -> None:
-    # cancel active AI task
+    # cancel active AI task cooperatively
     if app.ai_task and not app.ai_task.done():
         app.ai_task.cancel()
-    
-    child = app.chat_box.get_first_child()
-    while child:
-        next_child = child.get_next_sibling()
-        if isinstance(child, Gtk.Box):
-            is_spinner = False
-            inner = child.get_first_child()
-            while inner:
-                if isinstance(inner, Gtk.Label) and inner.get_text() == "Thinking...":
-                    is_spinner = True
-                    break
-                inner = inner.get_next_sibling()
-            
-            if is_spinner:
-                if child.get_parent() == app.chat_box:
-                    app.chat_box.remove(child)
-        child = next_child
-
-    app.is_sending = False
-    if hasattr(app, "unlock_ui"):
-        GLib.idle_add(app.unlock_ui)
-    else:
-        # fallback input restoration
-        app.input_box.set_sensitive(True)
-        app.set_entry_locked(False)
-        app.entry.grab_focus()
 
 def update_thumbnail(app) -> None:
     # sync compose box attachment thumbnails

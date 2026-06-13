@@ -1,6 +1,5 @@
 # network
 import json
-import init_gi
 import logging
 import utils
 from gi.repository import Soup, GLib
@@ -13,6 +12,9 @@ async def get_ai_response(app, bubble, thinking_label, messages: List[dict]):
         "messages": messages,
         "stream": True
     }
+    
+    if hasattr(app, "temperature") and app.temperature is not None:
+        payload["temperature"] = app.temperature
     
     # retry loop because the local server takes its sweet time waking up
     for attempt in range(5):

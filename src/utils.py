@@ -1,8 +1,6 @@
-import os
-import json
 import re
 import asyncio
-from gi.repository import Gio, GLib
+from typing import Optional
 
 async def gio_async(obj, method_name, *args):
     """
@@ -800,9 +798,15 @@ progressbar.usage-bar progress {
     transition: background-color 0.4s ease;
     background-color: @accent_bg_color;
 }
+
+/* Chat bubble image attachments */
+.rounded-image {
+    border-radius: 12px;
+    border: 1px solid alpha(@window_fg_color, 0.08);
+}
 """
 
-from typing import Optional
+
 
 def get_model_logo_file(model_name: str) -> Optional[str]:
     if not model_name:
@@ -837,12 +841,12 @@ def markdown_to_pango(text: str) -> str:
     text = text.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
     
     # bold
-    text = re.sub(r'\*\*(.*?)\*\*', r'<b>\1</b>', text)
-    text = re.sub(r'__(.*?)__', r'<b>\1</b>', text)
+    text = re.sub(r'\*\*(?!\s)(.*?)(?<!\s)\*\*', r'<b>\1</b>', text)
+    text = re.sub(r'__(?!\s)(.*?)(?<!\s)__', r'<b>\1</b>', text)
     
     # italics
-    text = re.sub(r'\*(.*?)\*', r'<i>\1</i>', text)
-    text = re.sub(r'_(.*?)_', r'<i>\1</i>', text)
+    text = re.sub(r'\*(?!\s)(.*?)(?<!\s)\*', r'<i>\1</i>', text)
+    text = re.sub(r'_(?!\s)(.*?)(?<!\s)_', r'<i>\1</i>', text)
     
     # Inline code
     text = re.sub(r'`(.*?)`', r'<tt>\1</tt>', text)
@@ -860,7 +864,8 @@ def markdown_to_pango(text: str) -> str:
 def looks_like_code(text: str) -> bool:
     # guess if text is code
     lines = text.split('\n')
-    if len(lines) < 2: return False
+    if len(lines) < 2:
+        return False
     
     score = 0
     
@@ -891,12 +896,15 @@ def looks_like_code(text: str) -> bool:
 
     for line in lines:
         line = line.strip()
-        if not line: continue
+        if not line:
+            continue
         
         for pattern in high_signal:
-            if re.search(pattern, line): score += 15
+            if re.search(pattern, line):
+                score += 15
         for pattern in mid_signal:
-            if re.search(pattern, line): score += 5
+            if re.search(pattern, line):
+                score += 5
             
         # check typical ending chars
         if any(line.endswith(c) for c in [';', '{', '}', ':', ')']):
@@ -932,10 +940,14 @@ def parse_message(text: str):
             
             if not language:
                 code_lower = code.lower()
-                if any(k in code_lower for k in py_keywords): language = "python3"
-                elif any(k in code_lower for k in sh_keywords): language = "sh"
-                elif any(k in code_lower for k in c_keywords): language = "c"
-                else: language = "text"
+                if any(k in code_lower for k in py_keywords):
+                    language = "python3"
+                elif any(k in code_lower for k in sh_keywords):
+                    language = "sh"
+                elif any(k in code_lower for k in c_keywords):
+                    language = "c"
+                else:
+                    language = "text"
             
             chunks.append(("code", code.strip(), language))
             last_end = match.end()

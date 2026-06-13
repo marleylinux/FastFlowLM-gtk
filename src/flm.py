@@ -70,7 +70,7 @@ def has_sufficient_ram(required_gb=4.0) -> bool:
         logging.error(f"RAM evaluation failed: {e}")
         return True  # hope for the best if psutil fails
 
-def start_flm_serve(model: str, current_server_process: Optional[subprocess.Popen]) -> subprocess.Popen:
+def start_flm_serve(model: str, current_server_process: Optional[subprocess.Popen], pmode: str = "performance", ctx_len: int = 2048) -> subprocess.Popen:
     # terminate existing process asynchronously
     if current_server_process:
         def reap_process(proc):
@@ -101,7 +101,13 @@ def start_flm_serve(model: str, current_server_process: Optional[subprocess.Pope
     except Exception:
         pass
 
-    proc = subprocess.Popen(["flm", "serve", model], 
+    cmd = ["flm", "serve", model]
+    if pmode:
+        cmd.extend(["--pmode", pmode])
+    if ctx_len and ctx_len > 0:
+        cmd.extend(["--ctx-len", str(ctx_len)])
+
+    proc = subprocess.Popen(cmd, 
                              stdout=log_file, 
                              stderr=log_file)
                              

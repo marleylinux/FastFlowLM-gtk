@@ -25,6 +25,8 @@ def save_session(app) -> None:
         "id": app.current_session_id,
         "title": title,
         "model": existing_model,
+        "system_prompt": getattr(app, "system_prompt", "You are a helpful assistant."),
+        "temperature": getattr(app, "temperature", 0.7),
         "messages": app.history
     }
     
@@ -47,7 +49,7 @@ def save_session(app) -> None:
         logging.error(f"Error saving session: {e}")
         import display
         from gi.repository import GLib
-        GLib.idle_add(display.add_system_message, app, f"Warning: Failed to save session data.")
+        GLib.idle_add(display.add_system_message, app, "Warning: Failed to save session data.")
 
 def load_history_metadata(app) -> None:
     # read chat files for sidebar

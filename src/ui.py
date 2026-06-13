@@ -1,5 +1,4 @@
 # ui
-import init_gi
 from gi.repository import Gtk, Adw
 import display
 
@@ -156,7 +155,7 @@ def show_welcome_message(app):
     # status pill
     status_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
     status_box.set_valign(Gtk.Align.CENTER)
-    status_pill = Gtk.Label(label="● System Status")
+    status_pill = Gtk.Label(label="● Live")
     status_pill.add_css_class("live-status-pill")
     status_box.append(status_pill)
     hero_box.append(status_box)
@@ -406,7 +405,7 @@ def build_sidebar(app) -> Adw.ToolbarView:
     db_txt_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=2)
     db_txt_box.set_hexpand(True)
     
-    db_title = Gtk.Label(label="System Dashboard")
+    db_title = Gtk.Label(label="Dashboard")
     db_title.set_halign(Gtk.Align.START)
     db_title.add_css_class("sidebar-title")
     
@@ -490,6 +489,12 @@ def build_main_content(app) -> Adw.ToolbarView:
     app.btn_eject.set_tooltip_text("Eject Model")
     app.btn_eject.connect("clicked", app.on_eject_clicked)
     app.header.pack_end(app.btn_eject)
+
+    # settings button
+    app.btn_settings = Gtk.MenuButton()
+    app.btn_settings.set_icon_name("emblem-system-symbolic")
+    app.btn_settings.set_tooltip_text("Chat Settings")
+    app.header.pack_end(app.btn_settings)
     
     # model picker popover
     app.model_btn = Gtk.MenuButton()
@@ -648,7 +653,7 @@ def build_memlock_page(app) -> Adw.ToolbarView:
 
         def on_fix(_b):
             import subprocess
-            cmd = "echo '* - memlock unlimited' > /etc/security/limits.d/99-fastflowlm-gtk.conf"
+            cmd = "mkdir -p /etc/security/limits.d && echo '* - memlock unlimited' > /etc/security/limits.d/99-fastflowlm-gtk.conf && chmod 644 /etc/security/limits.d/99-fastflowlm-gtk.conf"
             try:
                 res = subprocess.run(["pkexec", "sh", "-c", cmd])
                 if res.returncode == 0:
@@ -683,3 +688,193 @@ def build_memlock_page(app) -> Adw.ToolbarView:
 
     toolbar.set_content(status)
     return toolbar
+
+def build_settings_popover(app) -> Gtk.Popover:
+    popover = Gtk.Popover()
+    
+    main_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=12)
+    main_box.set_margin_start(14)
+    main_box.set_margin_end(14)
+    main_box.set_margin_top(14)
+    main_box.set_margin_bottom(14)
+    main_box.set_size_request(300, -1)
+    
+    # Title
+    title_lbl = Gtk.Label(label="Chat Settings")
+    title_lbl.add_css_class("sidebar-title")
+    title_lbl.set_halign(Gtk.Align.START)
+    main_box.append(title_lbl)
+    
+    # Separator
+    main_box.append(Gtk.Separator())
+    
+    # System Prompt Label
+    sys_lbl = Gtk.Label(label="System Instruction")
+    sys_lbl.add_css_class("sidebar-subtitle")
+    sys_lbl.set_halign(Gtk.Align.START)
+    main_box.append(sys_lbl)
+    
+    # System Prompt TextView
+    sys_scroll = Gtk.ScrolledWindow()
+    sys_scroll.set_min_content_height(100)
+    sys_scroll.set_min_content_width(280)
+    sys_scroll.set_policy(Gtk.PolicyType.NEVER, Gtk.PolicyType.AUTOMATIC)
+    sys_scroll.add_css_class("code-block")
+    
+    sys_view = Gtk.TextView()
+    sys_view.set_wrap_mode(Gtk.WrapMode.WORD_CHAR)
+    sys_view.get_buffer().set_text(getattr(app, "system_prompt", "You are a helpful assistant."))
+    sys_scroll.set_child(sys_view)
+    main_box.append(sys_scroll)
+    
+    # Temperature Label & Value
+    temp_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
+    temp_lbl = Gtk.Label(label="Temperature")
+    temp_lbl.add_css_class("sidebar-subtitle")
+    temp_lbl.set_halign(Gtk.Align.START)
+    temp_lbl.set_hexpand(True)
+    temp_box.append(temp_lbl)
+    
+    val_lbl = Gtk.Label(label=f"{getattr(app, 'temperature', 0.7):.1f}")
+    val_lbl.add_css_class("dim-label")
+    val_lbl.set_halign(Gtk.Align.END)
+    temp_box.append(val_lbl)
+    main_box.append(temp_box)
+    
+    # Temperature Scale
+    temp_scale = Gtk.Scale.new_with_range(Gtk.Orientation.HORIZONTAL, 0.0, 1.5, 0.1)
+    temp_scale.set_value(getattr(app, "temperature", 0.7))
+    temp_scale.set_draw_value(False)
+    
+    def on_temp_changed(scale):
+        val = scale.get_value()
+        val_lbl.set_text(f"{val:.1f}")
+        app.temperature = val
+        if app.history:
+            app.save_session()
+            
+    temp_scale.connect("value-changed", on_temp_changed)
+    main_box.append(temp_scale)
+    
+    # Hardware/Server Options Header
+    main_box.append(Gtk.Separator())
+    
+    hw_lbl = Gtk.Label(label="Hardware Options (Requires Reload)")
+    hw_lbl.add_css_class("sidebar-subtitle")
+    hw_lbl.add_css_class("dim-label")
+    hw_lbl.set_halign(Gtk.Align.START)
+    main_box.append(hw_lbl)
+    
+    # Power Mode Dropdown
+    pmode_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
+    pmode_lbl = Gtk.Label(label="Power Mode")
+    pmode_lbl.add_css_class("sidebar-subtitle")
+    pmode_lbl.set_halign(Gtk.Align.START)
+    pmode_lbl.set_hexpand(True)
+    pmode_box.append(pmode_lbl)
+    
+    pmode_combo = Gtk.ComboBoxText()
+    pmode_combo.append("powersaver", "Power Saver")
+    pmode_combo.append("balanced", "Balanced")
+    pmode_combo.append("performance", "Performance")
+    pmode_combo.append("turbo", "Turbo")
+    pmode_combo.set_active_id(getattr(app, "power_mode", "performance"))
+    pmode_box.append(pmode_combo)
+    main_box.append(pmode_box)
+    
+    # Context Length Dropdown
+    ctx_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
+    ctx_lbl = Gtk.Label(label="Context Length")
+    ctx_lbl.add_css_class("sidebar-subtitle")
+    ctx_lbl.set_halign(Gtk.Align.START)
+    ctx_lbl.set_hexpand(True)
+    ctx_box.append(ctx_lbl)
+    
+    ctx_combo = Gtk.ComboBoxText()
+    ctx_combo.append("1024", "1024 Tokens")
+    ctx_combo.append("2048", "2048 Tokens")
+    ctx_combo.append("4096", "4096 Tokens")
+    ctx_combo.append("8192", "8192 Tokens")
+    ctx_combo.set_active_id(str(getattr(app, "context_len", 2048)))
+    ctx_box.append(ctx_combo)
+    main_box.append(ctx_box)
+    
+    # Buttons Box
+    btn_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=8)
+    btn_box.set_margin_top(8)
+    
+    # Reset Button
+    btn_reset = Gtk.Button(label="Reset")
+    btn_reset.add_css_class("flat")
+    def on_reset(btn):
+        sys_view.get_buffer().set_text("You are a helpful assistant.")
+        temp_scale.set_value(0.7)
+        pmode_combo.set_active_id("performance")
+        ctx_combo.set_active_id("2048")
+        app.system_prompt = "You are a helpful assistant."
+        app.temperature = 0.7
+        app.power_mode = "performance"
+        app.context_len = 2048
+        app.save_config()
+        if app.history:
+            app.save_session()
+    btn_reset.connect("clicked", on_reset)
+    btn_box.append(btn_reset)
+    
+    # Export Button
+    btn_export = Gtk.Button(label="Export MD")
+    btn_export.add_css_class("flat")
+    def on_export(btn):
+        popover.popdown()
+        import handlers
+        handlers.on_export_clicked(app)
+    btn_export.connect("clicked", on_export)
+    btn_box.append(btn_export)
+    
+    btn_box.append(Gtk.Box(hexpand=True))
+    
+    # Apply/Close Button
+    btn_apply = Gtk.Button(label="Apply")
+    btn_apply.add_css_class("suggested-action")
+    btn_apply.add_css_class("pill")
+    def on_apply(btn):
+        buf = sys_view.get_buffer()
+        start, end = buf.get_bounds()
+        prompt = buf.get_text(start, end, True).strip()
+        app.system_prompt = prompt
+        app.temperature = temp_scale.get_value()
+        app.power_mode = pmode_combo.get_active_id() or "performance"
+        app.context_len = int(ctx_combo.get_active_id() or "2048")
+        app.save_config()
+        if app.history:
+            app.save_session()
+        popover.popdown()
+    btn_apply.connect("clicked", on_apply)
+    btn_box.append(btn_apply)
+    
+    main_box.append(btn_box)
+    
+    def on_closed(pop):
+        buf = sys_view.get_buffer()
+        start, end = buf.get_bounds()
+        prompt = buf.get_text(start, end, True).strip()
+        app.system_prompt = prompt
+        app.temperature = temp_scale.get_value()
+        app.power_mode = pmode_combo.get_active_id() or "performance"
+        app.context_len = int(ctx_combo.get_active_id() or "2048")
+        app.save_config()
+        if app.history:
+            app.save_session()
+            
+    popover.connect("closed", on_closed)
+    
+    popover.set_child(main_box)
+    return popover
+
+def update_settings_ui(app) -> None:
+    if hasattr(app, "btn_settings"):
+        popover = build_settings_popover(app)
+        app.btn_settings.set_popover(popover)
+        
+        has_session = not getattr(app, "is_welcome_screen", False)
+        app.btn_settings.set_visible(has_session)

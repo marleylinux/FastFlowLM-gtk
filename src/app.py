@@ -1,13 +1,14 @@
 #!/usr/bin/env python3
 import sys
 import warnings
-# filter out annoying deprecation warnings
-warnings.filterwarnings("ignore", category=DeprecationWarning)
 import asyncio
-import init_gi
-from gi.repository import Gio, GLib
+import init_gi  # noqa: F401
+from gi.repository import GLib
 from gi.events import GLibEventLoopPolicy
 from main import FlmChatApp
+
+# filter out annoying deprecation warnings
+warnings.filterwarnings("ignore", category=DeprecationWarning)
 
 # set prgname so taskbar icon works
 GLib.set_prgname("com.marley.FastFlowLM-gtk")

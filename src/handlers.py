@@ -1,4 +1,3 @@
-import init_gi
 from gi.repository import Gtk, Gdk, GLib, Adw
 import display
 import os
@@ -21,8 +20,9 @@ def on_key_pressed(app, ctrl: Gtk.EventControllerKey, keyval: int, keycode: int,
 
 def on_send(app, widget: Optional[Gtk.Widget]) -> None:
     # send prompt to model
-    import logging
     if app.is_sending:
+        import display
+        display.cancel_ai_task(app)
         return
         
     buffer = app.entry.get_buffer()
@@ -38,8 +38,12 @@ def on_send(app, widget: Optional[Gtk.Widget]) -> None:
         
     app.is_sending = True
     
-    # lock UI during generation
-    app.input_box.set_sensitive(False)
+    # lock UI elements during generation, but keep send button sensitive for cancellation
+    app.input_scroll.set_sensitive(False)
+    app.btn_attach.set_sensitive(False)
+    app.btn_send.set_icon_name("process-stop-symbolic")
+    app.btn_send.set_tooltip_text("Stop Generation")
+    
     app.set_entry_locked(True)
     if hasattr(app, "update_shortcuts_sensitivity"):
         app.update_shortcuts_sensitivity()
@@ -173,7 +177,8 @@ def on_history_row_activated(app, listbox, row):
         app.nav_list.unselect_all()
         
     session_id = getattr(row, 'session_id', None)
-    if not session_id: return
+    if not session_id:
+        return
     
     if app.current_session_id == session_id:
         return
@@ -372,3 +377,68 @@ def on_files_dropped(app, file_list):
         limit_dialog.present()
 
     return True
+
+def on_export_clicked(app) -> None:
+    if not app.history:
+        return
+        
+    dialog = Gtk.FileChooserNative.new(
+        "Export Chat as Markdown",
+        app.win,
+        Gtk.FileChooserAction.SAVE,
+        "Save",
+        "Cancel"
+    )
+    
+    # Set default filename based on first user message
+    title = "chat"
+    for msg in app.history:
+        if msg["role"] == "user":
+            title = msg["content"][:20].strip()
+            title = "".join(c for c in title if c.isalnum() or c in (" ", "-", "_")).strip()
+            title = title.replace(" ", "_").lower()
+            break
+            
+    dialog.set_current_name(f"{title}.md")
+    
+    # Add filter
+    filter = Gtk.FileFilter()
+    filter.set_name("Markdown Files")
+    filter.add_pattern("*.md")
+    dialog.add_filter(filter)
+    
+    def on_export_response(dialog, response):
+        if response == Gtk.ResponseType.ACCEPT:
+            file = dialog.get_file()
+            path = file.get_path()
+            if path:
+                try:
+                    md_lines = []
+                    md_lines.append(f"# Chat Session: {getattr(app, 'current_model', 'Local Model')}\n")
+                    if getattr(app, "system_prompt", None):
+                        md_lines.append(f"> **System Prompt:** {app.system_prompt}\n")
+                    md_lines.append(f"> **Temperature:** {getattr(app, 'temperature', 0.7)}\n\n---\n")
+                    
+                    for msg in app.history:
+                        role_name = "User" if msg["role"] == "user" else "Assistant"
+                        md_lines.append(f"### {role_name}\n\n{msg['content']}\n")
+                        
+                        # add attachments list if any
+                        if msg.get("attachments"):
+                            md_lines.append("\n*Attachments:*")
+                            for att in msg["attachments"]:
+                                md_lines.append(f"\n- `{att['name']}` ({att['type']})")
+                            md_lines.append("\n")
+                            
+                        md_lines.append("\n---\n")
+                        
+                    with open(path, "w", encoding="utf-8") as f:
+                        f.write("\n".join(md_lines))
+                        
+                    display.add_system_message(app, f"Chat successfully exported to {os.path.basename(path)}")
+                except Exception as e:
+                    display.add_system_message(app, f"Failed to export chat: {e}")
+        dialog.destroy()
+        
+    dialog.connect("response", on_export_response)
+    dialog.show()

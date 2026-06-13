@@ -2,12 +2,10 @@ import asyncio
 import json
 import subprocess
 import os
-import time
 import logging
 import base64
 from typing import Optional, List, Dict
 
-import init_gi
 from gi.repository import Gtk, Gdk, GdkPixbuf, Gio, GLib, Adw, Soup
 
 import utils
@@ -34,6 +32,10 @@ class FlmChatApp(Adw.Application):
         self.theme_name: str = theme.load_theme_name()
         self.models: List[Dict] = flm.get_all_models()
         self.current_model: Optional[str] = None
+        self.system_prompt: str = "You are a helpful assistant."
+        self.temperature: float = 0.7
+        self.power_mode: str = "performance"
+        self.context_len: int = 2048
 
         self.downloading_models = set()
         self.tasks = set()
@@ -63,6 +65,8 @@ class FlmChatApp(Adw.Application):
                 with open(config_path, "r") as f:
                     config_data = json.load(f)
                     self.favourited_chat = config_data.get("favourited_chat", None)
+                    self.power_mode = config_data.get("power_mode", "performance")
+                    self.context_len = config_data.get("context_len", 2048)
             except Exception as e:
                 logging.error(f"Error loading config: {e}")
 
@@ -76,6 +80,8 @@ class FlmChatApp(Adw.Application):
             
             config_data["theme_name"] = self.theme_name
             config_data["favourited_chat"] = self.favourited_chat
+            config_data["power_mode"] = getattr(self, "power_mode", "performance")
+            config_data["context_len"] = getattr(self, "context_len", 2048)
             
             with open(config_path, "w") as f:
                 json.dump(config_data, f)
@@ -83,9 +89,10 @@ class FlmChatApp(Adw.Application):
             logging.error(f"Error saving config: {e}")
 
     def build_search_cache_async(self):
+        sessions_meta_copy = list(self.sessions_metadata)
         def build_cache():
             cache = {}
-            for meta in self.sessions_metadata:
+            for meta in sessions_meta_copy:
                 session_id = meta["id"]
                 path = os.path.join(self.history_dir, f"{session_id}.json")
                 try:
@@ -101,6 +108,8 @@ class FlmChatApp(Adw.Application):
             
         def on_cache_ready(cache):
             self._search_cache = cache
+            if hasattr(self, 'search_entry') and self.search_entry.get_text():
+                self.on_search_changed(self.search_entry)
             
         def run_cache():
             cache = build_cache()
@@ -174,6 +183,10 @@ class FlmChatApp(Adw.Application):
         self.add_action(self.action_show_shortcuts)
         self.set_accels_for_action("app.show_shortcuts", ["<Ctrl>question", "<Ctrl>slash"])
 
+        self.action_about = Gio.SimpleAction.new("about", None)
+        self.action_about.connect("activate", self.on_about_activated)
+        self.add_action(self.action_about)
+
         # sync shortcut sensitivity
         self.update_shortcuts_sensitivity()
         
@@ -188,8 +201,9 @@ class FlmChatApp(Adw.Application):
 
 
         self.split_view = Adw.OverlaySplitView()
-        self.split_view.set_sidebar_width_fraction(0.3)
-        self.split_view.set_min_sidebar_width(200)
+        self.split_view.set_min_sidebar_width(180)
+        self.split_view.set_max_sidebar_width(240)
+        self.split_view.set_sidebar_width_fraction(0.20)
         self.win.set_content(self.split_view)
 
         self.sidebar_box = ui.build_sidebar(self)
@@ -217,7 +231,14 @@ class FlmChatApp(Adw.Application):
         menu.append_section(None, section_theme)
 
         menu.append("Keyboard Shortcuts", "app.show_shortcuts")
+
+        section_about = Gio.Menu.new()
+        section_about.append("About FastFlowLM-gtk", "app.about")
+        menu.append_section(None, section_about)
+
         self.options_btn.set_menu_model(menu)
+        
+        self.update_settings_ui = lambda: ui.update_settings_ui(self)
 
         self.update_model_ui()
         self.show_welcome_message()
@@ -265,11 +286,11 @@ class FlmChatApp(Adw.Application):
             title_text = meta.get("title", "")
             model_text = meta.get("model", "")
             
-            # get sidebar cell labels
-            main_box = row.get_child()
-            txt_box = main_box.get_first_child()
-            title_label = txt_box.get_first_child()
-            model_label = title_label.get_next_sibling()
+            # get sidebar cell labels using robust attributes instead of fragile children tree
+            title_label = getattr(row, 'title_label', None)
+            model_label = getattr(row, 'model_label', None)
+            if not title_label or not model_label:
+                continue
             
             # allow markup formatting
             title_label.set_use_markup(True)
@@ -344,7 +365,8 @@ class FlmChatApp(Adw.Application):
         return self.current_model is not None
 
     def is_current_model_vlm(self) -> bool:
-        if not self.current_model: return False
+        if not self.current_model:
+            return False
         model_data = next((m for m in self.models if m["model"] == self.current_model), None)
         return model_data is not None and model_data.get("vlm", False)
 
@@ -381,7 +403,7 @@ class FlmChatApp(Adw.Application):
             display.add_system_message(self, f"Starting process matrix for {self.current_model}...")
             model_data = next((m for m in self.models if m['model'] == self.current_model), None)
             if model_data:
-                self.server_process = flm.start_flm_serve(self.current_model, self.server_process)
+                self.server_process = flm.start_flm_serve(self.current_model, self.server_process, pmode=self.power_mode, ctx_len=self.context_len)
                 self.run_task(self.wait_for_server())
                 self.update_model_ui()
 
@@ -490,6 +512,10 @@ class FlmChatApp(Adw.Application):
             model.add_css_class("sidebar-subtitle")
             model.add_css_class("dim-label")
             
+            # Store labels directly on the row to avoid fragile layout tree walks during search
+            row.title_label = title
+            row.model_label = model
+            
             txt_box.append(title)
             txt_box.append(model)
             main_box.append(txt_box)
@@ -537,6 +563,8 @@ class FlmChatApp(Adw.Application):
         self.history = []
         self.current_session_id = None
         self.is_welcome_screen = False
+        self.system_prompt = "You are a helpful assistant."
+        self.temperature = 0.7
 
         self.model_btn.set_sensitive(True)
         models.update_model_ui(self)
@@ -624,6 +652,8 @@ class FlmChatApp(Adw.Application):
                 
                 self.history = data.get("messages", [])
                 self.current_model = data.get("model")
+                self.system_prompt = data.get("system_prompt", "You are a helpful assistant.")
+                self.temperature = data.get("temperature", 0.7)
                 
                 for msg in self.history:
                     attachments = msg.get("attachments", [])
@@ -640,7 +670,7 @@ class FlmChatApp(Adw.Application):
                         await asyncio.sleep(1.5)
                         if self.current_session_id != session_id:
                             return  # User navigated away during sleep
-                        self.server_process = flm.start_flm_serve(self.current_model, self.server_process)
+                        self.server_process = flm.start_flm_serve(self.current_model, self.server_process, pmode=self.power_mode, ctx_len=self.context_len)
                         self.run_task(self.wait_for_server())
                     else:
                         dialog = Adw.MessageDialog(
@@ -827,7 +857,7 @@ class FlmChatApp(Adw.Application):
             except Exception:
                 pass
 
-            lines = [l.strip() for l in output.splitlines() if l.strip()]
+            lines = [line.strip() for line in output.splitlines() if line.strip()]
             title = "NPU Memory Validation Succeeded" if success else "NPU Memory Validation Failed"
             subtitle = output
             
@@ -835,22 +865,26 @@ class FlmChatApp(Adw.Application):
                 if memlock_warning:
                     title = "NPU Alert: Low Memory-Lock Limit (memlock)"
                     subtitle = f"Current limit is {memlock_soft_str}. Although validation succeeded, locking memory is required to lock LLM weights."
-                    if hasattr(self, "diagnostic_fix_btn"): self.diagnostic_fix_btn.set_visible(True)
+                    if hasattr(self, "diagnostic_fix_btn"):
+                        self.diagnostic_fix_btn.set_visible(True)
                 else:
                     active_str = f"NPU active contexts: {npu_details['contexts']}. " if npu_details.get('present', False) else ""
-                    title = f"NPU Memory Validation Passed"
+                    title = "NPU Memory Validation Passed"
                     subtitle = f"Successfully validated NPU reserved memory on {npu_details['name']}.\n{active_str}Columns: {npu_details['columns']} | Firmware: {npu_details['firmware']}"
-                    if hasattr(self, "diagnostic_fix_btn"): self.diagnostic_fix_btn.set_visible(False)
+                    if hasattr(self, "diagnostic_fix_btn"):
+                        self.diagnostic_fix_btn.set_visible(False)
             else:
                 if memlock_warning:
                     title = "NPU Error: Low memlock Limit Detected"
                     subtitle = f"NPU validation failed. Locked-memory limit ({memlock_soft_str}) is too low to reserve NPU memory."
-                    if hasattr(self, "diagnostic_fix_btn"): self.diagnostic_fix_btn.set_visible(True)
+                    if hasattr(self, "diagnostic_fix_btn"):
+                        self.diagnostic_fix_btn.set_visible(True)
                 else:
                     if lines:
                         title = f"NPU Error: {lines[0]}"
                         subtitle = "\n".join(lines[1:]) if len(lines) > 1 else "Run 'flm validate' in terminal for more details."
-                    if hasattr(self, "diagnostic_fix_btn"): self.diagnostic_fix_btn.set_visible(False)
+                    if hasattr(self, "diagnostic_fix_btn"):
+                        self.diagnostic_fix_btn.set_visible(False)
                     
             self.diagnostic_title.set_text(title)
             self.diagnostic_subtitle.set_text(subtitle)
@@ -969,21 +1003,19 @@ class FlmChatApp(Adw.Application):
             else:
                 full_prompt = "Attached files:\n" + "\n".join(text_blocks)
 
-        def update_ui():
-            display.add_message(self, full_prompt, is_user=True, attachments=attachments)
-            self.history.append({
-                "role": "user",
-                "content": full_prompt,
-                "attachments": attachments
-            })
-            self.save_session()
-            self.update_model_ui()
-            display.scroll_to_bottom(self)
-            
-            self.ai_task = asyncio.create_task(self.get_ai_response())
-            self.tasks.add(self.ai_task)
-            
-        GLib.idle_add(update_ui)
+        # Update UI directly on the main event loop thread without GLib.idle_add
+        display.add_message(self, full_prompt, is_user=True, attachments=attachments)
+        self.history.append({
+            "role": "user",
+            "content": full_prompt,
+            "attachments": attachments
+        })
+        self.save_session()
+        self.update_model_ui()
+        display.scroll_to_bottom(self)
+        
+        self.ai_task = asyncio.create_task(self.get_ai_response())
+        self.tasks.add(self.ai_task)
 
     def set_entry_locked(self, locked: bool, message: str = "Please wait..."):
         self.entry.set_sensitive(not locked)
@@ -1001,8 +1033,11 @@ class FlmChatApp(Adw.Application):
 
     def unlock_ui(self):
         self.input_box.set_sensitive(True)
+        self.input_scroll.set_sensitive(True)
         self.set_entry_locked(False)
         self.btn_attach.set_sensitive(self.is_current_model_capable())
+        self.btn_send.set_icon_name("mail-send-symbolic")
+        self.btn_send.set_tooltip_text("Send message")
         self.entry.grab_focus()
         self.is_sending = False
 
@@ -1035,6 +1070,12 @@ class FlmChatApp(Adw.Application):
         
         try:
             messages = []
+            if hasattr(self, "system_prompt") and self.system_prompt:
+                messages.append({
+                    "role": "system",
+                    "content": [{"type": "text", "text": self.system_prompt}]
+                })
+                
             for msg in self.history:
                 role = msg["role"]
                 text_content = msg.get("content", "")
@@ -1105,29 +1146,36 @@ class FlmChatApp(Adw.Application):
             data_stream = Gio.DataInputStream.new(stream)
             while True:
                 line_bytes_result = await utils.gio_async(data_stream, "read_line_async", GLib.PRIORITY_DEFAULT, None)
-                if line_bytes_result is None: break
+                if line_bytes_result is None:
+                    break
                 
                 line_bytes, length = line_bytes_result
-                if line_bytes is None: break
+                if line_bytes is None:
+                    break
                 line = line_bytes.decode("utf-8").strip()
-                if not line: continue
+                if not line:
+                    continue
                 if line.startswith("data: "):
                     content = line[6:]
-                    if content == "[DONE]": break
+                    if content == "[DONE]":
+                        break
                     try:
                         chunk = json.loads(content)
                         if "choices" in chunk and len(chunk["choices"]) > 0:
                             text = chunk["choices"][0].get("delta", {}).get("content")
                             if text:
-                                def update_bubble(new_text, current_full_content):
-                                    if thinking_box and thinking_box.get_parent() == self.chat_box:
-                                        self.chat_box.remove(thinking_box)
-                                    markup = utils.markdown_to_pango(current_full_content)
-                                    bubble.set_markup(markup)
-                                    display.scroll_to_bottom(self)
-                                    
+                                if thinking_box and thinking_box.get_parent() == self.chat_box:
+                                    self.chat_box.remove(thinking_box)
+                                    thinking_box = None
                                 full_content += text
-                                GLib.idle_add(update_bubble, text, full_content)
+                                try:
+                                    markup = utils.markdown_to_pango(full_content)
+                                    bubble.set_markup(markup)
+                                except Exception as e:
+                                    logging.error(f"Failed to set pango markup in stream: {e}")
+                                    bubble.set_use_markup(False)
+                                    bubble.set_text(full_content)
+                                display.scroll_to_bottom(self)
                     except json.JSONDecodeError as e:
                         logging.error(f"JSON parsing error: {e}")
             
@@ -1151,9 +1199,29 @@ class FlmChatApp(Adw.Application):
                 self.history.append({"role": "assistant", "content": full_content})
                 self.save_session()
 
-            GLib.idle_add(finish_message_ui)
+            finish_message_ui()
         
         except asyncio.CancelledError:
+            if full_content:
+                def finish_cancelled_message():
+                    parent = bubble.get_parent()
+                    if parent:
+                        parent.remove(bubble)
+                        display.render_message_chunks(self, parent, full_content)
+                        
+                        # append copy button
+                        header = parent.get_first_child()
+                        if header:
+                            copy_btn = Gtk.Button.new_from_icon_name("edit-copy-symbolic")
+                            copy_btn.add_css_class("flat")
+                            copy_btn.add_css_class("bubble-action-btn")
+                            copy_btn.set_tooltip_text("Copy Response")
+                            copy_btn.connect("clicked", lambda b: display.copy_to_clipboard(full_content))
+                            header.append(copy_btn)
+                            
+                self.history.append({"role": "assistant", "content": full_content})
+                self.save_session()
+                finish_cancelled_message()
             raise
         except Exception as e:
             logging.error(f"General response error: {str(e)}")
@@ -1161,15 +1229,19 @@ class FlmChatApp(Adw.Application):
             self.is_sending = False
             
             if data_stream:
-                try: data_stream.close_async(GLib.PRIORITY_DEFAULT, None, None, None)
-                except Exception: pass
+                try:
+                    data_stream.close_async(GLib.PRIORITY_DEFAULT, None, None, None)
+                except Exception:
+                    pass
             elif stream:
-                try: stream.close_async(GLib.PRIORITY_DEFAULT, None, None, None)
-                except Exception: pass
+                try:
+                    stream.close_async(GLib.PRIORITY_DEFAULT, None, None, None)
+                except Exception:
+                    pass
 
-            GLib.idle_add(self.unlock_ui)
+            self.unlock_ui()
             if thinking_box and thinking_box.get_parent() == self.chat_box:
-                GLib.idle_add(self.chat_box.remove, thinking_box)
+                self.chat_box.remove(thinking_box)
             if not full_content:
                 def cleanup_empty_bubble():
                     try:
@@ -1180,7 +1252,7 @@ class FlmChatApp(Adw.Application):
                                 self.chat_box.remove(p2)
                     except Exception as e:
                         logging.error(f"Error cleaning up empty bubble: {e}")
-                GLib.idle_add(cleanup_empty_bubble)
+                cleanup_empty_bubble()
 
     def on_theme_color_changed(self, action, state) -> None:
         action.set_state(state)
@@ -1223,6 +1295,21 @@ class FlmChatApp(Adw.Application):
         
         shortcuts_win.add_section(section)
         shortcuts_win.present()
+
+    def on_about_activated(self, action, param):
+        about = Adw.AboutDialog()
+        about.set_application_name("FastFlowLM-gtk")
+        about.set_application_icon("com.marley.FastFlowLM-gtk")
+        about.set_version("2.5.1")
+        about.set_developer_name("marley")
+        about.set_website("https://github.com/marleylinux/FastFlowLM-gtk")
+        about.set_issue_url("https://github.com/marleylinux/FastFlowLM-gtk/issues")
+        about.set_license_type(Gtk.License.MIT_X11)
+        about.set_comments(
+            "A minimalist, modern desktop interface for FastFlowLM, built with GTK 4 and Libadwaita."
+        )
+        about.set_developers(["marley"])
+        about.present(self.win)
 
     def update_shortcuts_sensitivity(self):
         # restrict shortcuts during heavy operations

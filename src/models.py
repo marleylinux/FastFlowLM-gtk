@@ -1,10 +1,8 @@
 # models
-import init_gi
 from gi.repository import Gtk, Adw, GLib
 import asyncio
 import subprocess
 import os
-import shutil
 import flm
 import re
 import display
@@ -103,7 +101,7 @@ async def download_model(app, model_name: str) -> None:
     
     try:
         process = await asyncio.create_subprocess_exec(
-            "flm", "pull", model_name, "--force",
+            "stdbuf", "-oL", "-eL", "flm", "pull", model_name, "--force",
             stdout=subprocess.PIPE,
             stderr=subprocess.STDOUT
         )
@@ -116,7 +114,7 @@ async def download_model(app, model_name: str) -> None:
                 break
             
             output = chunk.decode('utf-8', errors='ignore')
-            lines = output.split('\r')
+            lines = output.splitlines()
             
             for line in lines:
                 match = re.search(r"Downloading:\s+(\d+(\.\d+)?)%", line)
@@ -133,7 +131,7 @@ async def download_model(app, model_name: str) -> None:
         if process.returncode == 0:
             display.add_system_message(app, f"Successfully downloaded {model_name}")
             display.add_system_message(app, f"Starting {model_name}...")
-            app.server_process = flm.start_flm_serve(model_name, app.server_process)
+            app.server_process = flm.start_flm_serve(model_name, app.server_process, pmode=app.power_mode, ctx_len=app.context_len)
             app.run_task(wait_for_server(app))
         else:
             display.add_system_message(app, f"Failed to download {model_name}")
@@ -391,6 +389,9 @@ def update_model_ui(app) -> None:
     
     if hasattr(app, "update_shortcuts_sensitivity"):
         app.update_shortcuts_sensitivity()
+        
+    if hasattr(app, "update_settings_ui"):
+        app.update_settings_ui()
 
 def confirm_download_from_btn(app, model_data: dict, popover: Gtk.Popover) -> None:
     # download click handler
@@ -467,7 +468,7 @@ async def delete_model_background(app, model_data: dict) -> None:
             display.add_system_message(app, purge_msg)
         display.add_system_message(app, f"Removed {model_name}")
     except subprocess.CalledProcessError:
-        display.add_system_message(app, f"Model files were missing. Cleaning up UI.")
+        display.add_system_message(app, "Model files were missing. Cleaning up UI.")
     except Exception as e:
         display.add_system_message(app, f"Deletion error: {str(e)}")
     
@@ -502,7 +503,7 @@ def on_model_selected(app, btn: Optional[Gtk.Button], model_data: dict, popover:
         confirm_download(app, model_data)
     else:
         display.add_system_message(app, f"Starting process matrix for {model_name}...")
-        app.server_process = flm.start_flm_serve(model_name, app.server_process)
+        app.server_process = flm.start_flm_serve(model_name, app.server_process, pmode=app.power_mode, ctx_len=app.context_len)
         app.run_task(wait_for_server(app))
 
     app.update_model_ui()

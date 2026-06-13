@@ -980,14 +980,19 @@ class FlmChatApp(Adw.Application):
         }
         
         def read_files():
+            max_file_bytes = 100 * 1024  # 100 KB cap per text file
             for att in attachments:
                 if att["type"] == "text":
                     try:
                         with open(att["path"], "r", encoding="utf-8", errors="replace") as f:
-                            content = f.read()
+                            content = f.read(max_file_bytes + 1)
+                        truncated = len(content) > max_file_bytes
+                        if truncated:
+                            content = content[:max_file_bytes]
                         _, ext = os.path.splitext(att["path"].lower())
                         lang = ext_map.get(ext, "")
-                        text_blocks.append(f"\n\n### File: {att['name']}\n```{lang}\n{content}\n```")
+                        truncation_note = "\n\n[File truncated at 100 KB]" if truncated else ""
+                        text_blocks.append(f"\n\n### File: {att['name']}\n```{lang}\n{content}\n```{truncation_note}")
                     except Exception as e:
                         logging.error(f"Failed to read file {att['path']}: {e}")
                         text_blocks.append(f"\n\n### File: {att['name']}\n(Error reading file: {e})")
@@ -1048,7 +1053,6 @@ class FlmChatApp(Adw.Application):
             GLib.idle_add(self.unlock_ui)
             return
 
-        # Check if the model is actually installed
         model_data = next((m for m in self.models if m['model'] == self.current_model), None)
         if model_data and not model_data.get('installed', False):
             display.add_system_message(self, f"Error: {self.current_model} is not downloaded. Please download it first.")
@@ -1069,81 +1073,109 @@ class FlmChatApp(Adw.Application):
         data_stream = None
         
         try:
-            messages = []
-            if hasattr(self, "system_prompt") and self.system_prompt:
-                messages.append({
-                    "role": "system",
-                    "content": self.system_prompt
-                })
-                
-            for msg in self.history:
-                role = msg["role"]
-                text_content = msg.get("content", "")
-                
-                images_to_encode = []
-                if msg.get("image"):
-                    images_to_encode.append(msg["image"])
-                if msg.get("attachments"):
-                    for att in msg["attachments"]:
+            def _encode_image_to_b64(img_path: str):
+                """Encode a single image to base64 JPEG (scaled down). Returns b64 string or None."""
+                try:
+                    pixbuf = GdkPixbuf.Pixbuf.new_from_file(img_path)
+                    if pixbuf is None:
+                        return None
+                    # Scale down large images to keep payload manageable
+                    max_dim = 768
+                    w, h = pixbuf.get_width(), pixbuf.get_height()
+                    if w > max_dim or h > max_dim:
+                        scale = min(max_dim / w, max_dim / h)
+                        pixbuf = pixbuf.scale_simple(
+                            max(1, int(w * scale)), max(1, int(h * scale)),
+                            GdkPixbuf.InterpType.BILINEAR
+                        )
+                    # Flatten alpha onto white background
+                    if pixbuf.get_has_alpha():
+                        white = GdkPixbuf.Pixbuf.new(
+                            GdkPixbuf.Colorspace.RGB, False, 8,
+                            pixbuf.get_width(), pixbuf.get_height()
+                        )
+                        white.fill(0xffffffff)
+                        pixbuf.composite(
+                            white, 0, 0, pixbuf.get_width(), pixbuf.get_height(),
+                            0, 0, 1, 1, GdkPixbuf.InterpType.BILINEAR, 255
+                        )
+                        pixbuf = white
+                    ok, buf = pixbuf.save_to_bufferv("jpeg", ["quality"], ["82"])
+                    if ok:
+                        return base64.b64encode(buf).decode("utf-8")
+                    logging.error(f"Failed JPEG-encode: {img_path}")
+                    return None
+                except Exception as e:
+                    logging.error(f"Image encode error {img_path}: {e}")
+                    return None
+
+            def _build_messages_sync():
+                """Build the complete messages list, including image encoding, off the UI thread."""
+                built = []
+                if hasattr(self, "system_prompt") and self.system_prompt:
+                    built.append({"role": "system", "content": self.system_prompt})
+
+                for msg in self.history:
+                    role = msg["role"]
+                    text_content = msg.get("content", "")
+
+                    # Collect image paths for THIS message only (not all history)
+                    img_paths = []
+                    if msg.get("image"):
+                        p = msg["image"]
+                        if p and os.path.exists(p):
+                            img_paths.append(p)
+                    for att in msg.get("attachments", []):
                         if isinstance(att, dict) and att.get("type") == "image":
-                            path = att.get("path")
-                            if path and path not in images_to_encode:
-                                images_to_encode.append(path)
+                            p = att.get("path")
+                            if p and p not in img_paths and os.path.exists(p):
+                                img_paths.append(p)
 
-                if images_to_encode:
-                    new_content = [{"type": "text", "text": text_content}]
-                else:
-                    new_content = text_content
-
-                if messages and messages[-1]["role"] == role:
-                    prev_content = messages[-1]["content"]
-                    if isinstance(prev_content, str) and isinstance(new_content, str):
-                        messages[-1]["content"] += "\n" + new_content
-                    elif isinstance(prev_content, str) and isinstance(new_content, list):
-                        messages[-1]["content"] = [{"type": "text", "text": prev_content}] + new_content
-                    elif isinstance(prev_content, list) and isinstance(new_content, str):
-                        messages[-1]["content"].append({"type": "text", "text": new_content})
-                    else:
-                        messages[-1]["content"].extend(new_content)
-                else:
-                    messages.append({"role": role, "content": new_content})
-
-                def process_images():
-                    for img_path in images_to_encode:
-                        try:
-                            pixbuf = GdkPixbuf.Pixbuf.new_from_file(img_path)
-                            
-                            # scale down massive images to prevent RAM explosion
-                            max_dim = 1024
-                            w = pixbuf.get_width()
-                            h = pixbuf.get_height()
-                            if w > max_dim or h > max_dim:
-                                scale = min(max_dim / w, max_dim / h)
-                                new_w = int(w * scale)
-                                new_h = int(h * scale)
-                                pixbuf = pixbuf.scale_simple(new_w, new_h, GdkPixbuf.InterpType.BILINEAR)
-                            
-                            # strip transparent alpha channel
-                            if pixbuf.get_has_alpha():
-                                white_pixbuf = GdkPixbuf.Pixbuf.new(GdkPixbuf.Colorspace.RGB, False, 8, pixbuf.get_width(), pixbuf.get_height())
-                                white_pixbuf.fill(0xffffffff)
-                                pixbuf.composite(white_pixbuf, 0, 0, pixbuf.get_width(), pixbuf.get_height(), 0, 0, 1, 1, GdkPixbuf.InterpType.BILINEAR, 255)
-                                pixbuf = white_pixbuf
-
-                            success, buffer = pixbuf.save_to_bufferv("jpeg", ["quality"], ["90"])
-                            if success:
-                                encoded = base64.b64encode(buffer).decode("utf-8")
-                                messages[-1]["content"].append({
-                                    "type": "image_url", 
+                    if img_paths:
+                        # Build multipart content list — encode images right here, for this message
+                        content_parts = [{"type": "text", "text": text_content}]
+                        for img_path in img_paths:
+                            encoded = _encode_image_to_b64(img_path)
+                            if encoded:
+                                content_parts.append({
+                                    "type": "image_url",
                                     "image_url": {"url": f"data:image/jpeg;base64,{encoded}"}
                                 })
-                            else:
-                                logging.error(f"Failed to convert image: {img_path}")
-                        except Exception as e:
-                            logging.error(f"Error encoding image: {e}")
+                        new_content = content_parts
+                    else:
+                        new_content = text_content
 
-                if images_to_encode:
-                    await asyncio.to_thread(process_images)
+                    # Merge consecutive same-role messages
+                    if built and built[-1]["role"] == role:
+                        prev = built[-1]["content"]
+                        if isinstance(prev, str) and isinstance(new_content, str):
+                            built[-1]["content"] += "\n" + new_content
+                        elif isinstance(prev, str) and isinstance(new_content, list):
+                            built[-1]["content"] = [{"type": "text", "text": prev}] + new_content
+                        elif isinstance(prev, list) and isinstance(new_content, str):
+                            built[-1]["content"].append({"type": "text", "text": new_content})
+                        elif isinstance(prev, list) and isinstance(new_content, list):
+                            built[-1]["content"].extend(new_content)
+                    else:
+                        built.append({"role": role, "content": new_content})
+
+                return built
+
+            # Build messages off UI thread (image encoding is CPU/disk bound)
+            messages = await asyncio.to_thread(_build_messages_sync)
+
+            # Guard: reject if payload is absurdly large (> 10 MB serialised)
+            try:
+                payload_bytes = len(json.dumps(messages).encode())
+                if payload_bytes > 10 * 1024 * 1024:
+                    display.add_system_message(
+                        self,
+                        f"Error: Payload too large ({payload_bytes // 1024} KB). "
+                        "Start a new chat or use smaller/fewer images."
+                    )
+                    return
+            except Exception:
+                pass
 
             try:
                 stream = await network.get_ai_response(self, bubble, thinking_box, messages)

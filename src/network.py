@@ -34,11 +34,24 @@ async def get_ai_response(app, bubble, thinking_label, messages: List[dict]):
                 except Exception:
                     pass
             
-            logging.warning(f"Server returned status {status} on attempt {attempt + 1}")
+            response_body = msg.get_response_body().data
+            if response_body:
+                try:
+                    err_data = json.loads(response_body.decode("utf-8"))
+                    if "error" in err_data and "message" in err_data["error"]:
+                        raise RuntimeError(err_data["error"]["message"])
+                except Exception:
+                    pass
+            
+            logging.warning(f"Server returned status {status} on attempt {attempt + 1}. Body: {response_body}")
             # server errored, no point in retrying
             if status != Soup.Status.NONE and status < 500:
+                if status == Soup.Status.BAD_REQUEST:
+                    raise RuntimeError("Bad Request (Status 400). Payload may be too large or malformed.")
                 break
                 
+        except RuntimeError:
+            raise
         except Exception as e:
             logging.warning(f"Connection attempt {attempt + 1} failed: {e}")
             

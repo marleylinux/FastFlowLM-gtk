@@ -795,7 +795,7 @@ def build_settings_popover(app) -> Gtk.Popover:
     ctx_combo.append("2048", "2048 Tokens")
     ctx_combo.append("4096", "4096 Tokens")
     ctx_combo.append("8192", "8192 Tokens")
-    ctx_combo.set_active_id(str(getattr(app, "context_len", 2048)))
+    ctx_combo.set_active_id(str(getattr(app, "context_len", 8192)))
     ctx_box.append(ctx_combo)
     main_box.append(ctx_box)
     
@@ -814,7 +814,7 @@ def build_settings_popover(app) -> Gtk.Popover:
         app.system_prompt = "You are a helpful assistant."
         app.temperature = 0.7
         app.power_mode = "performance"
-        app.context_len = 2048
+        app.context_len = 8192
         app.save_config()
         if app.history:
             app.save_session()
@@ -844,7 +844,7 @@ def build_settings_popover(app) -> Gtk.Popover:
         app.system_prompt = prompt
         app.temperature = temp_scale.get_value()
         app.power_mode = pmode_combo.get_active_id() or "performance"
-        app.context_len = int(ctx_combo.get_active_id() or "2048")
+        app.context_len = int(ctx_combo.get_active_id() or "8192")
         app.save_config()
         if app.history:
             app.save_session()
@@ -860,11 +860,21 @@ def build_settings_popover(app) -> Gtk.Popover:
         prompt = buf.get_text(start, end, True).strip()
         app.system_prompt = prompt
         app.temperature = temp_scale.get_value()
+        old_pmode = getattr(app, "power_mode", "performance")
+        old_ctx = getattr(app, "context_len", 8192)
+        
         app.power_mode = pmode_combo.get_active_id() or "performance"
-        app.context_len = int(ctx_combo.get_active_id() or "2048")
+        app.context_len = int(ctx_combo.get_active_id() or "8192")
         app.save_config()
         if app.history:
             app.save_session()
+            
+        if old_pmode != app.power_mode or old_ctx != app.context_len:
+            if getattr(app, "current_model", None) and app.current_model != "none":
+                import flm
+                import display
+                app.server_process = flm.start_flm_serve(app.current_model, app.server_process, pmode=app.power_mode, ctx_len=app.context_len)
+                display.add_system_message(app, f"Server reloaded with context size {app.context_len}")
             
     popover.connect("closed", on_closed)
     

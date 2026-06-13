@@ -35,7 +35,7 @@ class FlmChatApp(Adw.Application):
         self.system_prompt: str = "You are a helpful assistant."
         self.temperature: float = 0.7
         self.power_mode: str = "performance"
-        self.context_len: int = 2048
+        self.context_len: int = 8192
 
         self.downloading_models = set()
         self.tasks = set()
@@ -66,7 +66,7 @@ class FlmChatApp(Adw.Application):
                     config_data = json.load(f)
                     self.favourited_chat = config_data.get("favourited_chat", None)
                     self.power_mode = config_data.get("power_mode", "performance")
-                    self.context_len = config_data.get("context_len", 2048)
+                    self.context_len = config_data.get("context_len", 8192)
             except Exception as e:
                 logging.error(f"Error loading config: {e}")
 
@@ -81,7 +81,7 @@ class FlmChatApp(Adw.Application):
             config_data["theme_name"] = self.theme_name
             config_data["favourited_chat"] = self.favourited_chat
             config_data["power_mode"] = getattr(self, "power_mode", "performance")
-            config_data["context_len"] = getattr(self, "context_len", 2048)
+            config_data["context_len"] = getattr(self, "context_len", 8192)
             
             with open(config_path, "w") as f:
                 json.dump(config_data, f)
@@ -1138,7 +1138,12 @@ class FlmChatApp(Adw.Application):
                 if images_to_encode:
                     await asyncio.to_thread(process_images)
 
-            stream = await network.get_ai_response(self, bubble, thinking_box, messages)
+            try:
+                stream = await network.get_ai_response(self, bubble, thinking_box, messages)
+            except RuntimeError as e:
+                display.add_system_message(self, f"Error: {str(e)}")
+                return
+
             if not stream:
                 display.add_system_message(self, "Error: Connection lost or network endpoint failed.")
                 return
@@ -1300,7 +1305,7 @@ class FlmChatApp(Adw.Application):
         about = Adw.AboutDialog()
         about.set_application_name("FastFlowLM-gtk")
         about.set_application_icon("com.marley.FastFlowLM-gtk")
-        about.set_version("2.5.1")
+        about.set_version("2.5.2")
         about.set_developer_name("marley")
         about.set_website("https://github.com/marleylinux/FastFlowLM-gtk")
         about.set_issue_url("https://github.com/marleylinux/FastFlowLM-gtk/issues")

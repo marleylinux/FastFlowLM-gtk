@@ -1073,24 +1073,13 @@ class FlmChatApp(Adw.Application):
             if hasattr(self, "system_prompt") and self.system_prompt:
                 messages.append({
                     "role": "system",
-                    "content": [{"type": "text", "text": self.system_prompt}]
+                    "content": self.system_prompt
                 })
                 
             for msg in self.history:
                 role = msg["role"]
                 text_content = msg.get("content", "")
-                if messages and messages[-1]["role"] == role:
-                    current_content = messages[-1]["content"]
-                    for item in current_content:
-                        if item["type"] == "text":
-                            item["text"] += "\n" + text_content
-                            break
-                    else:
-                        current_content.append({"type": "text", "text": text_content})
-                else:
-                    content = [{"type": "text", "text": text_content}]
-                    messages.append({"role": role, "content": content})
-
+                
                 images_to_encode = []
                 if msg.get("image"):
                     images_to_encode.append(msg["image"])
@@ -1100,6 +1089,24 @@ class FlmChatApp(Adw.Application):
                             path = att.get("path")
                             if path and path not in images_to_encode:
                                 images_to_encode.append(path)
+
+                if images_to_encode:
+                    new_content = [{"type": "text", "text": text_content}]
+                else:
+                    new_content = text_content
+
+                if messages and messages[-1]["role"] == role:
+                    prev_content = messages[-1]["content"]
+                    if isinstance(prev_content, str) and isinstance(new_content, str):
+                        messages[-1]["content"] += "\n" + new_content
+                    elif isinstance(prev_content, str) and isinstance(new_content, list):
+                        messages[-1]["content"] = [{"type": "text", "text": prev_content}] + new_content
+                    elif isinstance(prev_content, list) and isinstance(new_content, str):
+                        messages[-1]["content"].append({"type": "text", "text": new_content})
+                    else:
+                        messages[-1]["content"].extend(new_content)
+                else:
+                    messages.append({"role": role, "content": new_content})
 
                 def process_images():
                     for img_path in images_to_encode:

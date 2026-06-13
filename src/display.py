@@ -146,8 +146,10 @@ def add_message(app, text: str, is_user: bool, attachments = None) -> Gtk.Label:
             if path:
                 try:
                     texture = Gdk.Texture.new_from_filename(path)
-                    img = Gtk.Image.new_from_paintable(texture)
-                    img.set_pixel_size(240)
+                    img = Gtk.Picture.new_for_paintable(texture)
+                    img.set_can_shrink(True)
+                    img.set_content_fit(Gtk.ContentFit.CONTAIN)
+                    img.set_size_request(240, 240)
                     img.add_css_class("rounded-image")
                     bubble_box.append(img)
                 except Exception as e:

@@ -1004,11 +1004,11 @@ class FlmChatApp(Adw.Application):
                 full_prompt = "Attached files:\n" + "\n".join(text_blocks)
 
         # Update UI directly on the main event loop thread without GLib.idle_add
-        display.add_message(self, full_prompt, is_user=True, attachments=attachments)
+        display.add_message(self, full_prompt, is_user=True, attachments=attachments_for_history)
         self.history.append({
             "role": "user",
             "content": full_prompt,
-            "attachments": attachments
+            "attachments": attachments_for_history
         })
         self.save_session()
         self.update_model_ui()

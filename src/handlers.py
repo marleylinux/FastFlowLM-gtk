@@ -21,7 +21,6 @@ def on_key_pressed(app, ctrl: Gtk.EventControllerKey, keyval: int, keycode: int,
 def on_send(app, widget: Optional[Gtk.Widget]) -> None:
     # send prompt to model
     if app.is_sending:
-        import display
         display.cancel_ai_task(app)
         return
         

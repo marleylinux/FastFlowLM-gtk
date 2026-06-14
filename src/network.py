@@ -2,7 +2,7 @@
 import json
 import logging
 import utils
-from gi.repository import Soup, GLib, Gio
+from gi.repository import Soup, GLib
 from typing import List
 
 async def _read_stream_bytes(stream, max_bytes: int = 8192) -> bytes:

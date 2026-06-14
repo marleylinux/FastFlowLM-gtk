@@ -9,7 +9,7 @@ license=('MIT')
 install="fastflowlm-gtk.install"
 depends=('python' 'python-gobject' 'gtk4' 'libadwaita' 'libsoup3' 'gtksourceview5' 'python-psutil' 'fastflowlm' 'xrt-plugin-amdxdna')
 source=("$pkgname-$pkgver-$pkgrel.tar.gz::https://github.com/marleylinux/FastFlowLM-gtk/archive/refs/tags/v${pkgver}.tar.gz")
-sha256sums=('69abb0c86fbf50c1d3b0bc68868b6f3afd54e289036e85c66687e2d65e8c07d2')
+sha256sums=('6b3f6b3f6a222d6b91fa6143eeb35a802bfccd12462810d8b08f7a159d69b228')
 
 package() {
   cd "$srcdir/FastFlowLM-"*

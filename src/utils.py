@@ -16,14 +16,14 @@ async def gio_async(obj, method_name, *args):
             finish_name = method_name.replace("_async", "") + "_finish"
             finish_method = getattr(source, finish_name)
             result = finish_method(res)
-            def _set_result():
+            def _set_result(res=result):
                 if not future.done():
-                    future.set_result(result)
+                    future.set_result(res)
             loop.call_soon_threadsafe(_set_result)
         except Exception as e:
-            def _set_exception():
+            def _set_exception(err=e):
                 if not future.done():
-                    future.set_exception(e)
+                    future.set_exception(err)
             loop.call_soon_threadsafe(_set_exception)
 
     # Call the async method

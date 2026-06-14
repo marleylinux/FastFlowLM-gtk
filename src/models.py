@@ -205,7 +205,8 @@ def update_model_ui(app) -> None:
     is_input_allowed = (has_model and 
                         is_current_installed and 
                         not is_downloading_any and
-                        is_running)
+                        is_running and
+                        not getattr(app, 'is_welcome_screen', False))
     
     app.set_entry_locked(not is_input_allowed)
     app.btn_send.set_sensitive(is_input_allowed)

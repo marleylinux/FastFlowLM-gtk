@@ -1037,6 +1037,14 @@ class FlmChatApp(Adw.Application):
             self.entry.remove_css_class("locked-entry")
 
     def unlock_ui(self):
+        self.is_sending = False
+        if getattr(self, "is_welcome_screen", False):
+            self.btn_send.set_icon_name("mail-send-symbolic")
+            self.set_entry_locked(True, "Start a new chat to begin")
+            self.btn_send.set_sensitive(False)
+            self.btn_attach.set_sensitive(False)
+            return
+
         self.input_box.set_sensitive(True)
         self.input_scroll.set_sensitive(True)
         self.set_entry_locked(False)
@@ -1044,7 +1052,6 @@ class FlmChatApp(Adw.Application):
         self.btn_send.set_icon_name("mail-send-symbolic")
         self.btn_send.set_tooltip_text("Send message")
         self.entry.grab_focus()
-        self.is_sending = False
 
     async def get_ai_response(self):
         if not self.current_model or self.current_model == "none":

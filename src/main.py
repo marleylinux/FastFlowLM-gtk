@@ -1171,10 +1171,10 @@ class FlmChatApp(Adw.Application):
             # Build messages off UI thread (image encoding is CPU/disk bound)
             messages = await asyncio.to_thread(_build_messages_sync)
 
-            # Guard: reject if payload is too large (> 4 MB serialised)
+            # Guard: reject if payload is too large (> 25 MB serialised)
             try:
                 payload_bytes = len(json.dumps(messages).encode())
-                if payload_bytes > 4 * 1024 * 1024:
+                if payload_bytes > 25 * 1024 * 1024:
                     display.add_system_message(
                         self,
                         f"Error: Files and chat history are too large ({payload_bytes / 1024 / 1024:.1f} MB).\n"

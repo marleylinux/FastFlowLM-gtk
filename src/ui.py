@@ -795,6 +795,8 @@ def build_settings_popover(app) -> Gtk.Popover:
     ctx_combo.append("2048", "2048 Tokens")
     ctx_combo.append("4096", "4096 Tokens")
     ctx_combo.append("8192", "8192 Tokens")
+    ctx_combo.append("16384", "16k Tokens")
+    ctx_combo.append("32768", "32k Tokens")
     ctx_combo.set_active_id(str(getattr(app, "context_len", 8192)))
     ctx_box.append(ctx_combo)
     main_box.append(ctx_box)
@@ -810,7 +812,7 @@ def build_settings_popover(app) -> Gtk.Popover:
         sys_view.get_buffer().set_text("You are a helpful assistant.")
         temp_scale.set_value(0.7)
         pmode_combo.set_active_id("performance")
-        ctx_combo.set_active_id("2048")
+        ctx_combo.set_active_id("8192")
         app.system_prompt = "You are a helpful assistant."
         app.temperature = 0.7
         app.power_mode = "performance"

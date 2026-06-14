@@ -54,19 +54,37 @@ async def get_ai_response(app, bubble, thinking_label, messages: List[dict]):
                 except Exception:
                     pass
             
+            # Extract a human-readable error from the server response body
+            error_detail = None
             if response_body:
                 try:
                     err_data = json.loads(response_body.decode("utf-8"))
-                    if "error" in err_data and "message" in err_data["error"]:
-                        raise RuntimeError(err_data["error"]["message"])
+                    # Try standard OpenAI error format
+                    if "error" in err_data:
+                        err_obj = err_data["error"]
+                        if isinstance(err_obj, dict):
+                            error_detail = err_obj.get("message") or err_obj.get("msg") or str(err_obj)
+                        else:
+                            error_detail = str(err_obj)
+                    elif "message" in err_data:
+                        error_detail = err_data["message"]
+                    elif "detail" in err_data:
+                        error_detail = err_data["detail"]
                 except (json.JSONDecodeError, UnicodeDecodeError):
-                    pass
+                    # Fall back to raw bytes snippet for debugging
+                    error_detail = response_body[:200].decode("utf-8", errors="replace")
             
             logging.warning(f"Server returned status {status} on attempt {attempt + 1}. Body: {response_body[:200]}")
-            # server errored, no point in retrying
+            
+            # server errored non-transiently — no point retrying
             if status != Soup.Status.NONE and status < 500:
                 if status == Soup.Status.BAD_REQUEST:
-                    raise RuntimeError("Bad Request (Status 400). Payload may be too large or malformed.")
+                    msg_text = "Bad Request (Status 400)"
+                    if error_detail:
+                        msg_text += f": {error_detail}"
+                    else:
+                        msg_text += ". Payload may be too large or malformed."
+                    raise RuntimeError(msg_text)
                 break
                 
         except RuntimeError:

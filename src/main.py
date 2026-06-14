@@ -1080,7 +1080,7 @@ class FlmChatApp(Adw.Application):
                     if pixbuf is None:
                         return None
                     # Scale down large images to keep payload manageable
-                    max_dim = 768
+                    max_dim = 1024
                     w, h = pixbuf.get_width(), pixbuf.get_height()
                     if w > max_dim or h > max_dim:
                         scale = min(max_dim / w, max_dim / h)
@@ -1100,7 +1100,7 @@ class FlmChatApp(Adw.Application):
                             0, 0, 1, 1, GdkPixbuf.InterpType.BILINEAR, 255
                         )
                         pixbuf = white
-                    ok, buf = pixbuf.save_to_bufferv("jpeg", ["quality"], ["82"])
+                    ok, buf = pixbuf.save_to_bufferv("jpeg", ["quality"], ["90"])
                     if ok:
                         return base64.b64encode(buf).decode("utf-8")
                     logging.error(f"Failed JPEG-encode: {img_path}")
@@ -1110,10 +1110,17 @@ class FlmChatApp(Adw.Application):
                     return None
 
             def _build_messages_sync():
-                """Build the complete messages list, including image encoding, off the UI thread."""
+                """Build the complete messages list, including image encoding, off the UI thread.
+                Always uses the multipart list format for ALL messages — this is required by VLM
+                servers (llama.cpp-based) which reject a mix of string content and list content.
+                Matches the format used in v2.5.2-4 which was confirmed working."""
                 built = []
                 if hasattr(self, "system_prompt") and self.system_prompt:
-                    built.append({"role": "system", "content": self.system_prompt})
+                    # System prompt also in multipart format
+                    built.append({
+                        "role": "system",
+                        "content": [{"type": "text", "text": self.system_prompt}]
+                    })
 
                 for msg in self.history:
                     role = msg["role"]
@@ -1131,33 +1138,33 @@ class FlmChatApp(Adw.Application):
                             if p and p not in img_paths and os.path.exists(p):
                                 img_paths.append(p)
 
-                    if img_paths:
-                        # Build multipart content list — encode images right here, for this message
-                        content_parts = [{"type": "text", "text": text_content}]
-                        for img_path in img_paths:
-                            encoded = _encode_image_to_b64(img_path)
-                            if encoded:
-                                content_parts.append({
-                                    "type": "image_url",
-                                    "image_url": {"url": f"data:image/jpeg;base64,{encoded}"}
-                                })
-                        new_content = content_parts
-                    else:
-                        new_content = text_content
+                    # Always use multipart list format — encode images inline for this message
+                    content_parts = [{"type": "text", "text": text_content}]
+                    for img_path in img_paths:
+                        encoded = _encode_image_to_b64(img_path)
+                        if encoded:
+                            content_parts.append({
+                                "type": "image_url",
+                                "image_url": {"url": f"data:image/jpeg;base64,{encoded}"}
+                            })
 
-                    # Merge consecutive same-role messages
+                    # Merge consecutive same-role messages (rare but possible)
                     if built and built[-1]["role"] == role:
-                        prev = built[-1]["content"]
-                        if isinstance(prev, str) and isinstance(new_content, str):
-                            built[-1]["content"] += "\n" + new_content
-                        elif isinstance(prev, str) and isinstance(new_content, list):
-                            built[-1]["content"] = [{"type": "text", "text": prev}] + new_content
-                        elif isinstance(prev, list) and isinstance(new_content, str):
-                            built[-1]["content"].append({"type": "text", "text": new_content})
-                        elif isinstance(prev, list) and isinstance(new_content, list):
-                            built[-1]["content"].extend(new_content)
+                        prev_parts = built[-1]["content"]
+                        # Append text to the existing text part
+                        merged_text = False
+                        for item in prev_parts:
+                            if item.get("type") == "text":
+                                item["text"] += "\n" + text_content
+                                merged_text = True
+                                break
+                        if not merged_text:
+                            prev_parts.append({"type": "text", "text": text_content})
+                        # Append any image parts from this message
+                        for part in content_parts[1:]:  # skip text part, already merged above
+                            prev_parts.append(part)
                     else:
-                        built.append({"role": role, "content": new_content})
+                        built.append({"role": role, "content": content_parts})
 
                 return built
 

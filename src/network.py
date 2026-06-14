@@ -83,7 +83,7 @@ async def get_ai_response(app, bubble, thinking_label, messages: List[dict]):
                     if error_detail:
                         msg_text += f": {error_detail}"
                     else:
-                        msg_text += ". Payload may be too large or malformed."
+                        msg_text += ".\n\nHint: Your attachments or chat history might be too large. Try starting a new chat, or attach smaller/fewer files."
                     raise RuntimeError(msg_text)
                 break
                 

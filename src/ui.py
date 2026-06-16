@@ -364,6 +364,7 @@ def build_sidebar(app) -> Adw.ToolbarView:
     toolbar_view.add_css_class("sidebar-pane")
     
     sidebar_header = Adw.HeaderBar()
+    sidebar_header.add_css_class("sidebar-header")
     sidebar_header.set_show_end_title_buttons(False)
     
     # new chat button
@@ -470,6 +471,7 @@ def build_main_content(app) -> Adw.ToolbarView:
     toolbar_view = Adw.ToolbarView()
     
     app.header = Adw.HeaderBar()
+    app.header.add_css_class("main-header")
     
     # sidebar toggle button
     app.btn_sidebar = Gtk.ToggleButton(icon_name="sidebar-show-symbolic")

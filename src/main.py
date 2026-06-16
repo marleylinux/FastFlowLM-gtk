@@ -1357,7 +1357,7 @@ class FlmChatApp(Adw.Application):
         about = Adw.AboutDialog()
         about.set_application_name("FastFlowLM-gtk")
         about.set_application_icon("com.marley.FastFlowLM-gtk")
-        about.set_version("2.5.5")
+        about.set_version("2.5.6")
         about.set_developer_name("marley")
         about.set_website("https://github.com/marleylinux/FastFlowLM-gtk")
         about.set_issue_url("https://github.com/marleylinux/FastFlowLM-gtk/issues")

@@ -31,6 +31,26 @@ async def gio_async(obj, method_name, *args):
     return await future
 
 CSS = """
+/* Define theme colors and fallbacks */
+@define-color semantic_green #30d158;
+@define-color semantic_yellow #ffd60a;
+@define-color semantic_red #ff3b30;
+@define-color warning_red #e01b24;
+@define-color sidebar_bg_color mix(@window_bg_color, @window_fg_color, 0.02);
+
+/* ─── Header bar premium aesthetics ───────────────────────── */
+.main-header {
+    background-color: transparent;
+    box-shadow: none;
+    border-bottom: none;
+}
+
+.sidebar-header {
+    background-color: transparent;
+    box-shadow: none;
+    border-bottom: none;
+}
+
 /* chat bg */
 .chat-scroll {
     background-color: @window_bg_color;
@@ -41,35 +61,27 @@ CSS = """
     padding: 14px 18px;
     margin: 8px 12px;
     border: 1px solid transparent;
-    box-shadow: 0 4px 14px alpha(@window_fg_color, 0.03), 0 1px 3px alpha(@window_fg_color, 0.01);
-    transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.25s ease, border-color 0.25s ease;
+    box-shadow: 0 2px 4px alpha(black, 0.03);
+    border-radius: 16px;
 }
 
 .user-bubble {
     background-image: linear-gradient(to bottom right, @accent_bg_color, shade(@accent_bg_color, 0.88));
     color: @accent_fg_color;
-    border-radius: 16px;
     border-bottom-right-radius: 4px;
-}
-
-.user-bubble:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 8px 22px alpha(@accent_bg_color, 0.18), 0 2px 6px alpha(@accent_bg_color, 0.08);
 }
 
 .assistant-bubble {
     background-color: alpha(@window_fg_color, 0.03);
     color: @window_fg_color;
     border: 1px solid alpha(@window_fg_color, 0.08);
-    border-radius: 16px;
     border-bottom-left-radius: 4px;
+    transition: background-color 0.25s ease, border-color 0.25s ease;
 }
 
 .assistant-bubble:hover {
-    transform: translateY(-2px);
-    background-color: alpha(@window_fg_color, 0.04);
+    background-color: alpha(@window_fg_color, 0.045);
     border-color: alpha(@window_fg_color, 0.12);
-    box-shadow: 0 8px 22px alpha(@window_fg_color, 0.06), 0 2px 6px alpha(@window_fg_color, 0.02);
 }
 
 /* avatars */
@@ -145,7 +157,6 @@ CSS = """
 .bubble-action-btn:hover {
     opacity: 1.0;
     background-color: alpha(@window_fg_color, 0.08);
-    transform: scale(1.1);
 }
 
 .bubble-action-btn:hover image {
@@ -230,17 +241,20 @@ textview.locked-entry text {
 .accent-btn, button.suggested-action {
     background-color: @accent_bg_color;
     color: @accent_fg_color;
-    transition: background-color 0.2s ease, transform 0.2s ease, box-shadow 0.2s ease;
+    transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .accent-btn:hover, button.suggested-action:hover {
-    background-color: shade(@accent_bg_color, 1.1);
-    transform: scale(1.08);
-    box-shadow: 0 2px 8px alpha(@accent_bg_color, 0.25);
+    background-color: shade(@accent_bg_color, 1.15);
 }
 
-.accent-btn:active, button.suggested-action:active {
-    transform: scale(0.95);
+.accent-btn:not(.circular):hover, button.suggested-action:not(.circular):hover {
+    transform: translateY(-4px);
+    box-shadow: 0 8px 16px alpha(@accent_bg_color, 0.3);
+}
+
+.accent-btn:not(.circular):active, button.suggested-action:not(.circular):active {
+    transform: translateY(-1px);
 }
 
 /* circular buttons */
@@ -343,7 +357,7 @@ progressbar text {
 /* sidebar hover */
 .delete-btn {
     color: alpha(@window_fg_color, 0.5);
-    transition: color 0.2s ease, transform 0.15s ease;
+    transition: color 0.2s ease;
 }
 
 .delete-btn image {
@@ -351,18 +365,14 @@ progressbar text {
     transition: color 0.2s ease;
 }
 
-.delete-btn:hover {
-    transform: scale(1.18);
-}
-
 .delete-btn:hover,
 .delete-btn:hover image {
-    color: #e54b4b;
+    color: @semantic_red;
 }
 
 .favorite-btn {
     color: alpha(@window_fg_color, 0.3);
-    transition: color 0.2s ease, transform 0.15s ease;
+    transition: color 0.2s ease;
 }
 
 .favorite-btn image {
@@ -373,10 +383,6 @@ progressbar text {
 .favorite-btn.active,
 .favorite-btn.active image {
     color: #ffc107;
-}
-
-.favorite-btn:hover {
-    transform: scale(1.18);
 }
 
 .favorite-btn:hover,
@@ -500,29 +506,29 @@ progressbar text {
 
 .model-picker-row button.flat.download-btn {
     color: @accent_bg_color;
+    transition: color 0.2s ease;
 }
 
 .model-picker-row button.flat.download-btn:hover {
-    transform: scale(1.15);
-    color: shade(@accent_bg_color, 1.1);
+    color: shade(@accent_bg_color, 1.15);
 }
 
 .model-picker-row button.flat.delete-btn {
     color: alpha(@window_fg_color, 0.4);
+    transition: color 0.2s ease;
 }
 
 .model-picker-row button.flat.delete-btn:hover {
-    color: #e54b4b;
-    transform: scale(1.15);
+    color: @semantic_red;
 }
 
 .model-picker-row button.flat.info-btn {
     color: alpha(@window_fg_color, 0.4);
+    transition: color 0.2s ease;
 }
 
 .model-picker-row button.flat.info-btn:hover {
     color: @accent_bg_color;
-    transform: scale(1.15);
 }
 
 /* logo images */
@@ -610,12 +616,12 @@ progressbar text {
     padding: 0;
 }
 
-/* ─── Dashboard Hero Banner ───────────────────────── */
+/* ─── Dashboard Hero Banner (Ultra-Modern Overhaul) ───────── */
 .hero-box {
     padding: 24px;
     margin-bottom: 16px;
     background: radial-gradient(circle at top center, alpha(@accent_bg_color, 0.18) 0%, alpha(@accent_bg_color, 0.05) 40%, transparent 100%);
-    border-radius: 20px;
+    border-radius: 24px;
     border: 1px solid alpha(@accent_bg_color, 0.15);
 }
 
@@ -651,24 +657,24 @@ progressbar text {
 
 @keyframes status-pulse {
     0% {
-        background-color: alpha(#30d158, 0.2);
-        border-color: alpha(#30d158, 0.4);
+        background-color: alpha(@semantic_green, 0.2);
+        border-color: alpha(@semantic_green, 0.4);
     }
     50% {
-        background-color: alpha(#30d158, 0.4);
-        border-color: alpha(#30d158, 0.8);
+        background-color: alpha(@semantic_green, 0.4);
+        border-color: alpha(@semantic_green, 0.8);
     }
     100% {
-        background-color: alpha(#30d158, 0.2);
-        border-color: alpha(#30d158, 0.4);
+        background-color: alpha(@semantic_green, 0.2);
+        border-color: alpha(@semantic_green, 0.4);
     }
 }
 
 .live-status-pill {
-    background-color: alpha(#30d158, 0.2);
-    color: #30d158;
-    border: 1px solid alpha(#30d158, 0.4);
-    border-radius: 12px;
+    background-color: alpha(@semantic_green, 0.2);
+    color: @semantic_green;
+    border: 1px solid alpha(@semantic_green, 0.4);
+    border-radius: 14px;
     padding: 4px 12px;
     font-size: 11px;
     font-weight: bold;
@@ -685,21 +691,21 @@ progressbar text {
 }
 
 .diagnostic-row.success {
-    background-color: alpha(#30d158, 0.08);
-    border: 1px solid alpha(#30d158, 0.2);
-    color: #30d158;
+    background-color: alpha(@semantic_green, 0.08);
+    border: 1px solid alpha(@semantic_green, 0.2);
+    color: @semantic_green;
 }
 
 .diagnostic-row.warning {
-    background-color: alpha(#ff9f0a, 0.08);
-    border: 1px solid alpha(#ff9f0a, 0.2);
-    color: #ff9f0a;
+    background-color: alpha(@semantic_yellow, 0.08);
+    border: 1px solid alpha(@semantic_yellow, 0.2);
+    color: @semantic_yellow;
 }
 
 .diagnostic-row.error {
-    background-color: alpha(#ff453a, 0.08);
-    border: 1px solid alpha(#ff453a, 0.2);
-    color: #ff453a;
+    background-color: alpha(@semantic_red, 0.08);
+    border: 1px solid alpha(@semantic_red, 0.2);
+    color: @semantic_red;
 }
 
 .diagnostic-row-title {
@@ -713,12 +719,12 @@ progressbar text {
     opacity: 0.85;
 }
 
-/* ─── Premium Monitor Cards ────────────────────────── */
+/* ─── Premium Monitor Cards (Glassy Pro Overhaul) ────────── */
 .monitor-card {
     background-color: alpha(@window_fg_color, 0.03);
     background-image: linear-gradient(145deg, alpha(@window_fg_color, 0.02), transparent);
     border: 1px solid alpha(@window_fg_color, 0.08);
-    border-radius: 18px;
+    border-radius: 20px;
     padding: 16px;
     transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
     box-shadow: 0 2px 4px alpha(black, 0.03);
@@ -727,7 +733,7 @@ progressbar text {
 .monitor-card:hover {
     background-color: alpha(@window_fg_color, 0.06);
     border-color: alpha(@accent_bg_color, 0.35);
-    transform: translateY(-3px);
+    transform: translateY(-4px);
     box-shadow: 0 8px 16px alpha(black, 0.08);
 }
 
@@ -803,6 +809,26 @@ progressbar.usage-bar progress {
     border: none;
     transition: background-color 0.4s ease;
     background-color: @accent_bg_color;
+}
+
+progressbar.usage-bar.low progress {
+    background-color: @semantic_green;
+    box-shadow: 0 0 12px alpha(@semantic_green, 0.3);
+}
+
+progressbar.usage-bar.medium progress {
+    background-color: @semantic_yellow;
+    box-shadow: 0 0 12px alpha(@semantic_yellow, 0.3);
+}
+
+progressbar.usage-bar.high progress {
+    background-color: @semantic_red;
+    box-shadow: 0 0 12px alpha(@semantic_red, 0.3);
+}
+
+progressbar.usage-bar.bottleneck progress {
+    background-color: @semantic_red;
+    box-shadow: 0 0 20px alpha(@semantic_red, 0.7);
 }
 
 /* Chat bubble image attachments */

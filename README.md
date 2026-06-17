@@ -26,29 +26,42 @@ Big models need to be locked in RAM. The install script and AUR package add the 
 
 After installing you **have** to log out and back in (or reboot) or the app will block you. It tells you this.
 
-## Requirements (Arch)
+## Requirements
 
-```bash
-sudo pacman -S gtk4 libadwaita gtksourceview5 libsoup3 python-gobject python-psutil fastflowlm xrt-plugin-amdxdna
-```
+- Python 3.11+
+- gtk4 + libadwaita + python-gobject
+- gtksourceview5 + libsoup3 + python-psutil
+- fastflowlm + xrt-plugin-amdxdna
 
 ## Install
 
-**From the AUR (recommended):**
+**Arch (easiest):**
 
 ```bash
 yay -S fastflowlm-gtk
 ```
 
-**Manual:**
+Or build from this repo:
 
 ```bash
 git clone https://github.com/marleylinux/FastFlowLM-gtk
+```
+```bash
+cd FastFlowLM-gtk
+makepkg -si
+```
+
+**Other distros:**
+
+```bash
+git clone https://github.com/marleylinux/FastFlowLM-gtk
+```
+```bash
 cd FastFlowLM-gtk
 sudo ./install.sh
 ```
 
-After that it should show up in your menu as FastFlowLM-gtk.
+Then launch "FastFlowLM-gtk" from your menu or just run `fastflowlm-gtk`.
 
 ## Running without installing (for testing)
 

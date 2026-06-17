@@ -1,8 +1,10 @@
+<p align="center">
+  <img src="src/assets/com.marley.FastFlowLM-gtk.png" width="128" height="128" alt="FastFlowLM-gtk logo" />
+</p>
+
 # FastFlowLM-gtk
 
 GTK4 chat app for FastFlowLM. Runs local models without Electron eating all your RAM.
-
-I put it together because I wanted something that felt normal on a Linux desktop.
 
 Powered by [FastFlowLM](https://github.com/FastFlowLM/FastFlowLM) ❤️
 
@@ -75,3 +77,10 @@ It also removes the memlock config it added.
 ## License
 
 MIT
+
+---
+
+### Check out my other apps:
+
+| [<img src="https://raw.githubusercontent.com/marleylinux/cpupower-gtk/main/src/assets/com.marley.cpupower-gtk.png" width="48" height="48" /><br/>cpupower-gtk](https://github.com/marleylinux/cpupower-gtk) | [<img src="https://raw.githubusercontent.com/marleylinux/Ryzenadj-gtk/main/src/assets/com.marley.ryzenadj-gtk.png" width="48" height="48" /><br/>Ryzenadj-gtk](https://github.com/marleylinux/Ryzenadj-gtk) | [<img src="https://raw.githubusercontent.com/marleylinux/FastFlowLM-gtk/main/src/assets/com.marley.FastFlowLM-gtk.png" width="48" height="48" /><br/>FastFlowLM-gtk](https://github.com/marleylinux/FastFlowLM-gtk) | [<img src="https://raw.githubusercontent.com/marleylinux/fetch-gtk/main/src/assets/com.marley.fetch-gtk.png" width="48" height="48" /><br/>fetch-gtk](https://github.com/marleylinux/fetch-gtk) |
+|---|---|---|---|
